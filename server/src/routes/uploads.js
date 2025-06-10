@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs/promises";
 import { pipeline } from "stream/promises";
+import "dotenv/config";
 
 const uploadRoutes = async (fastify) => {
   const prisma = fastify.prisma;
