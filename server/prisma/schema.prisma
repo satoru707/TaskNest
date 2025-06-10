@@ -1,0 +1,255 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  auth0Id   String   @unique
+  email     String   @unique
+  name      String
+  avatar    String?
+  role      Role     @default(EDITOR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ownedBoards    Board[]        @relation("BoardOwner")
+  boardMembers   BoardMember[]
+  createdTasks   Task[]         @relation("TaskCreator")
+  assignedTasks  TaskAssignee[]
+  comments       Comment[]
+  attachments    Attachment[]   @relation("AttachmentUploader")
+  activities     Activity[]
+
+  @@map("users")
+}
+
+model Board {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  ownerId     String
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner     User          @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members   BoardMember[]
+  lists     List[]
+  labels    Label[]
+  activities Activity[]
+
+  @@map("boards")
+}
+
+model BoardMember {
+  id      String    @id @default(cuid())
+  boardId String
+  userId  String
+  role    BoardRole @default(VIEWER)
+
+  // Relations
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
+  @@map("board_members")
+}
+
+model List {
+  id       String @id @default(cuid())
+  title    String
+  boardId  String
+  position Int
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks Task[]
+
+  @@map("lists")
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  listId      String
+  position    Int
+  dueDate     DateTime?
+  completed   Boolean   @default(false)
+  priority    Priority  @default(MEDIUM)
+  createdById String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  list         List           @relation(fields: [listId], references: [id], onDelete: Cascade)
+  createdBy    User           @relation("TaskCreator", fields: [createdById], references: [id])
+  assignees    TaskAssignee[]
+  labels       TaskLabel[]
+  checklistItems ChecklistItem[]
+  comments     Comment[]
+  attachments  Attachment[]
+  activities   Activity[]
+
+  @@map("tasks")
+}
+
+model TaskAssignee {
+  id     String @id @default(cuid())
+  taskId String
+  userId String
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@map("task_assignees")
+}
+
+model Label {
+  id      String @id @default(cuid())
+  name    String
+  color   String
+  boardId String
+
+  // Relations
+  board Board       @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks TaskLabel[]
+
+  @@map("labels")
+}
+
+model TaskLabel {
+  id      String @id @default(cuid())
+  taskId  String
+  labelId String
+
+  // Relations
+  task  Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  label Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, labelId])
+  @@map("task_labels")
+}
+
+model ChecklistItem {
+  id        String  @id @default(cuid())
+  title     String
+  completed Boolean @default(false)
+  taskId    String
+  position  Int
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("checklist_items")
+}
+
+model Comment {
+  id      String @id @default(cuid())
+  content String
+  taskId  String
+  userId  String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Attachment {
+  id         String @id @default(cuid())
+  filename   String
+  originalName String
+  mimeType   String
+  size       Int
+  url        String
+  taskId     String
+  uploadedById String
+  
+  createdAt DateTime @default(now())
+
+  // Relations
+  task       Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy User @relation("AttachmentUploader", fields: [uploadedById], references: [id])
+
+  @@map("attachments")
+}
+
+model Activity {
+  id      String       @id @default(cuid())
+  type    ActivityType
+  data    Json
+  boardId String?
+  taskId  String?
+  userId  String
+  
+  createdAt DateTime @default(now())
+
+  // Relations
+  board Board? @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  task  Task?  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activities")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum BoardRole {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ActivityType {
+  BOARD_CREATED
+  BOARD_UPDATED
+  BOARD_DELETED
+  LIST_CREATED
+  LIST_UPDATED
+  LIST_DELETED
+  TASK_CREATED
+  TASK_UPDATED
+  TASK_DELETED
+  TASK_MOVED
+  TASK_ASSIGNED
+  TASK_COMPLETED
+  COMMENT_ADDED
+  ATTACHMENT_ADDED
+  MEMBER_ADDED
+  MEMBER_REMOVED
+}
