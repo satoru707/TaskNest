@@ -10,6 +10,7 @@ import {
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { Mail, Lock } from "lucide-react";
+import "dotenv/config";
 
 export default function LoginPage() {
   const { loginWithRedirect } = useAuth0();
@@ -18,12 +19,12 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real implementation, we would validate and then call Auth0
 
     loginWithRedirect({
       authorizationParams: {
         screen_hint: "signup",
-        redirect_uri: `http://localhost:5173/dashboard`,
+        redirect_uri:
+          import.meta.env.VITE_FRONTURL || `http://localhost:5173/dashboard`,
       },
     });
   };
