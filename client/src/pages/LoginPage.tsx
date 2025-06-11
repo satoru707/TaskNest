@@ -22,8 +22,9 @@ export default function LoginPage() {
     loginWithRedirect({
       authorizationParams: {
         screen_hint: "signup",
-        redirect_uri:
-          import.meta.env.VITE_FRONTURL || `http://localhost:5173/dashboard`,
+        redirect_uri: `${
+          import.meta.env.VITE_FRONTURL || "http://localhost:5173"
+        }/dashboard`,
       },
     });
   };
