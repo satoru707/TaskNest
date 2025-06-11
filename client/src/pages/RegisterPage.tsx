@@ -10,14 +10,12 @@ import {
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { Mail, Lock, User } from "lucide-react";
-import "dotenv/config";
 
 export default function RegisterPage() {
   const { loginWithRedirect } = useAuth0();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // const URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api/auth";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +24,7 @@ export default function RegisterPage() {
       authorizationParams: {
         screen_hint: "signup",
         redirect_uri:
-          import.meta.env.VITE_FRONTURL || `http://localhost:5173/dashboard`,
+          import.meta.env.VITE_FRONTURL || `http://localhost:173/dashboard`,
       },
     });
   };

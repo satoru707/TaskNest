@@ -10,7 +10,6 @@ import {
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { Mail, Lock } from "lucide-react";
-import "dotenv/config";
 
 export default function LoginPage() {
   const { loginWithRedirect } = useAuth0();
