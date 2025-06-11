@@ -29,6 +29,19 @@ export default function LoginPage() {
     });
   };
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get("error");
+    const error_description = urlParams.get("error_description");
+    const token = urlParams.get("code");
+    if (error) {
+      console.error(error, error_description);
+    }
+    if (token) {
+      console.log(token);
+    }
+  });
+
   return (
     <Card className="w-full">
       <CardHeader>
