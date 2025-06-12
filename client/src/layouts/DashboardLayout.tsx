@@ -149,7 +149,7 @@ export default function DashboardLayout() {
             onClick={toggleSidebar}
             className="hidden md:block text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
           >
-            {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            {/* {isSidebarOpen ? <X size={20} /> : <Menu size={20} />} */}
           </button>
         </div>
 

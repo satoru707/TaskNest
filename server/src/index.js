@@ -13,11 +13,13 @@ import { dirname, join } from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const uploadsDir = join(__dirname, "uploads");
+const uploaDir = join(__dirname, "../uploads");
 
 try {
   await fs.access(uploadsDir);
 } catch {
   await fs.mkdir(uploadsDir, { recursive: true });
+  await fs.mkdir(uploaDir, { recursive: true });
   console.log("Uploads directory created");
 }
 // Import routes
