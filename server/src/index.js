@@ -12,14 +12,14 @@ import { dirname, join } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
 const uploadsDir = join(__dirname, "uploads");
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+try {
+  await fs.access(uploadsDir);
+} catch {
+  await fs.mkdir(uploadsDir, { recursive: true });
   console.log("Uploads directory created");
 }
-
 // Import routes
 import authRoutes from "./routes/auth.js";
 import boardRoutes from "./routes/boards.js";
