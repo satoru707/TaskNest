@@ -1,26 +1,29 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, Loader2, Plus } from 'lucide-react';
-import Button from '../ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
-import { aiAPI } from '../../lib/api';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Sparkles, Loader2, Plus, X } from "lucide-react";
+import Button from "../ui/Button";
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/Card";
+import { aiAPI } from "../../lib/api";
+import { toast } from "sonner";
 
 interface AITaskGeneratorProps {
   onTasksGenerated: (tasks: any[]) => void;
   boardContext?: string;
 }
 
-export default function AITaskGenerator({ onTasksGenerated, boardContext }: AITaskGeneratorProps) {
+export default function AITaskGenerator({
+  onTasksGenerated,
+  boardContext,
+}: AITaskGeneratorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTasks, setGeneratedTasks] = useState<any[]>([]);
-  const [summary, setSummary] = useState('');
+  const [summary, setSummary] = useState("");
 
   const handleGenerate = async () => {
     if (!description.trim()) {
-      toast.error('Please enter a project description');
+      toast.error("Please enter a project description");
       return;
     }
 
@@ -35,11 +38,11 @@ export default function AITaskGenerator({ onTasksGenerated, boardContext }: AITa
         setGeneratedTasks(response.data.tasks);
         setSummary(response.data.summary);
       } else {
-        toast.error('Failed to generate tasks');
+        toast.error("Failed to generate tasks");
       }
     } catch (error) {
-      console.error('Error generating tasks:', error);
-      toast.error('Failed to generate tasks');
+      console.error("Error generating tasks:", error);
+      toast.error("Failed to generate tasks");
     } finally {
       setIsGenerating(false);
     }
@@ -48,22 +51,22 @@ export default function AITaskGenerator({ onTasksGenerated, boardContext }: AITa
   const handleAddTasks = () => {
     onTasksGenerated(generatedTasks);
     setIsOpen(false);
-    setDescription('');
+    setDescription("");
     setGeneratedTasks([]);
-    setSummary('');
+    setSummary("");
     toast.success(`Added ${generatedTasks.length} AI-generated tasks`);
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'HIGH':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      case 'MEDIUM':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-      case 'LOW':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      case "HIGH":
+        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+      case "MEDIUM":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
+      case "LOW":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
     }
   };
 
@@ -88,14 +91,22 @@ export default function AITaskGenerator({ onTasksGenerated, boardContext }: AITa
     >
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="text-purple-600" size={24} />
-            AI Task Generator
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="text-purple-600" size={24} />
+              AI Task Generator
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)}>
+              <X size={20} />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               Project Description
             </label>
             <textarea
@@ -115,7 +126,7 @@ export default function AITaskGenerator({ onTasksGenerated, boardContext }: AITa
               icon={!isGenerating ? <Sparkles size={18} /> : undefined}
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
             >
-              {isGenerating ? 'Generating...' : 'Generate Tasks'}
+              {isGenerating ? "Generating..." : "Generate Tasks"}
             </Button>
             <Button variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
@@ -130,8 +141,12 @@ export default function AITaskGenerator({ onTasksGenerated, boardContext }: AITa
             >
               {summary && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2">AI Summary</h3>
-                  <p className="text-blue-800 dark:text-blue-200 text-sm">{summary}</p>
+                  <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+                    AI Summary
+                  </h3>
+                  <p className="text-blue-800 dark:text-blue-200 text-sm">
+                    {summary}
+                  </p>
                 </div>
               )}
 
@@ -149,9 +164,15 @@ export default function AITaskGenerator({ onTasksGenerated, boardContext }: AITa
                       className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
                     >
                       <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-gray-900 dark:text-white">{task.title}</h4>
+                        <h4 className="font-medium text-gray-900 dark:text-white">
+                          {task.title}
+                        </h4>
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
+                              task.priority
+                            )}`}
+                          >
                             {task.priority}
                           </span>
                           {task.estimatedHours && (
@@ -161,7 +182,9 @@ export default function AITaskGenerator({ onTasksGenerated, boardContext }: AITa
                           )}
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{task.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                        {task.description}
+                      </p>
                       {task.category && (
                         <span className="inline-block bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded">
                           {task.category}
@@ -184,7 +207,7 @@ export default function AITaskGenerator({ onTasksGenerated, boardContext }: AITa
                   variant="outline"
                   onClick={() => {
                     setGeneratedTasks([]);
-                    setSummary('');
+                    setSummary("");
                   }}
                 >
                   Clear

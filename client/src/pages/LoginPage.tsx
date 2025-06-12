@@ -12,7 +12,7 @@ import Button from "../components/ui/Button";
 import { Mail, Lock } from "lucide-react";
 
 export default function LoginPage() {
-  const { loginWithRedirect } = useAuth0();
+  const { loginWithRedirect, isAuthenticated } = useAuth0();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -28,6 +28,12 @@ export default function LoginPage() {
       },
     });
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      window.location.href = "/dashboard";
+    }
+  }, []);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);

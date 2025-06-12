@@ -1,158 +1,250 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { DndContext, DragOverlay, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { motion } from 'framer-motion';
-import { MoreHorizontal, Plus, MessageSquare, Paperclip, UserPlus, Search, Lock, Users, Calendar } from 'lucide-react';
-import Button from '../components/ui/Button';
-import KanbanList from '../components/board/KanbanList';
-import KanbanCard from '../components/board/KanbanCard';
-import { cn } from '../utils/cn';
-
-// Mock data for a board
-const mockBoard = {
-  id: '1',
-  title: 'Product Roadmap',
-  description: 'Plan and track our product development roadmap',
-  lists: [
-    {
-      id: 'list-1',
-      title: 'To Do',
-      tasks: [
-        {
-          id: 'task-1',
-          title: 'Research competitor features',
-          description: 'Analyze top 5 competitors and create feature comparison',
-          labels: [{ id: '1', name: 'Research', color: 'bg-purple-500' }],
-          dueDate: '2025-05-15',
-          assignees: [{ id: '1', name: 'Alex Smith', avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=40' }],
-          comments: 3,
-          attachments: 2,
-        },
-        {
-          id: 'task-2',
-          title: 'Create wireframes for new dashboard',
-          description: 'Design initial wireframes for the analytics dashboard',
-          labels: [{ id: '2', name: 'Design', color: 'bg-blue-500' }],
-          dueDate: '2025-05-18',
-          assignees: [{ id: '2', name: 'Jessica Chen', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=40' }],
-          comments: 1,
-          attachments: 0,
-        },
-      ],
-    },
-    {
-      id: 'list-2',
-      title: 'In Progress',
-      tasks: [
-        {
-          id: 'task-3',
-          title: 'Implement user authentication flow',
-          description: 'Create login, registration, and password reset functionality',
-          labels: [{ id: '3', name: 'Development', color: 'bg-green-500' }],
-          dueDate: '2025-05-20',
-          assignees: [
-            { id: '3', name: 'Mark Johnson', avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=40' },
-            { id: '4', name: 'Sarah Lee', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=40' },
-          ],
-          comments: 5,
-          attachments: 1,
-        },
-      ],
-    },
-    {
-      id: 'list-3',
-      title: 'Review',
-      tasks: [
-        {
-          id: 'task-4',
-          title: 'API integration with payment gateway',
-          description: 'Connect the application with Stripe for payment processing',
-          labels: [
-            { id: '3', name: 'Development', color: 'bg-green-500' },
-            { id: '4', name: 'High Priority', color: 'bg-red-500' },
-          ],
-          dueDate: '2025-05-12',
-          assignees: [{ id: '3', name: 'Mark Johnson', avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=40' }],
-          comments: 2,
-          attachments: 3,
-        },
-      ],
-    },
-    {
-      id: 'list-4',
-      title: 'Done',
-      tasks: [
-        {
-          id: 'task-5',
-          title: 'Create project documentation',
-          description: 'Write comprehensive documentation for the API endpoints',
-          labels: [
-            { id: '5', name: 'Documentation', color: 'bg-yellow-500' },
-          ],
-          dueDate: '2025-05-10',
-          assignees: [{ id: '1', name: 'Alex Smith', avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=40' }],
-          comments: 0,
-          attachments: 1,
-        },
-        {
-          id: 'task-6',
-          title: 'Design system setup',
-          description: 'Set up a component library and design system',
-          labels: [
-            { id: '2', name: 'Design', color: 'bg-blue-500' },
-          ],
-          dueDate: '2025-05-05',
-          assignees: [{ id: '2', name: 'Jessica Chen', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=40' }],
-          comments: 4,
-          attachments: 2,
-        },
-      ],
-    },
-  ],
-};
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { motion } from "framer-motion";
+import {
+  MoreHorizontal,
+  Plus,
+  MessageSquare,
+  Paperclip,
+  UserPlus,
+  Search,
+  Lock,
+  Users,
+  Calendar,
+  Brain,
+  Sparkles,
+} from "lucide-react";
+import Button from "../components/ui/Button";
+import KanbanList from "../components/board/KanbanList";
+import KanbanCard from "../components/board/KanbanCard";
+import TaskModal from "../components/board/TaskModal";
+import CreateTaskModal from "../components/board/CreateTaskModal";
+import CreateListModal from "../components/board/CreateListModal";
+import AddMemberModal from "../components/board/AddMemberModal";
+import AITaskGenerator from "../components/ai/AITaskGenerator";
+import AISummaryPanel from "../components/ai/AISummaryPanel";
+import { boardsAPI, tasksAPI } from "../lib/api";
+import { useSocket } from "../hooks/useSocket";
+import { useBoardStore } from "../stores/useBoardStore";
+import { toast } from "sonner";
+import { cn } from "../utils/cn";
 
 export default function BoardPage() {
   const { boardId } = useParams();
-  const [board, setBoard] = useState(mockBoard);
+  const { currentBoard, setCurrentBoard, setLoading } = useBoardStore();
   const [activeId, setActiveId] = useState(null);
-  
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+  const [isCreateListModalOpen, setIsCreateListModalOpen] = useState(false);
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+  const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
+  const [isAISummaryOpen, setIsAISummaryOpen] = useState(false);
+  const [selectedListId, setSelectedListId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Initialize socket connection for this board
+  useSocket(boardId);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-  
-  const handleDragStart = (event) => {
-    setActiveId(event.active.id);
-  };
-  
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    setActiveId(null);
-    
-    if (!over) return;
-    
-    if (active.id !== over.id) {
-      // Handle list reordering
-      if (active.id.toString().includes('list-') && over.id.toString().includes('list-')) {
-        setBoard((prev) => {
-          const oldIndex = prev.lists.findIndex((list) => list.id === active.id);
-          const newIndex = prev.lists.findIndex((list) => list.id === over.id);
-          
-          return {
-            ...prev,
-            lists: arrayMove(prev.lists, oldIndex, newIndex),
-          };
-        });
-      }
-      
-      // Handle task reordering or moving between lists
-      // This would be more complex in a real implementation
+
+  useEffect(() => {
+    if (boardId) {
+      loadBoard();
+    }
+  }, [boardId]);
+
+  const loadBoard = async () => {
+    if (!boardId) return;
+
+    setLoading(true);
+    try {
+      const response = await boardsAPI.getBoard(boardId);
+      setCurrentBoard(response.data.board);
+    } catch (error) {
+      console.error("Error loading board:", error);
+      toast.error("Failed to load board");
+    } finally {
+      setLoading(false);
     }
   };
-  
+
+  const handleDragStart = (event: any) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragEnd = async (event: any) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over || !currentBoard) return;
+
+    if (active.id !== over.id) {
+      // Handle list reordering
+      if (
+        active.id.toString().includes("list-") &&
+        over.id.toString().includes("list-")
+      ) {
+        const oldIndex = currentBoard.lists.findIndex(
+          (list: any) => list.id === active.id
+        );
+        const newIndex = currentBoard.lists.findIndex(
+          (list: any) => list.id === over.id
+        );
+
+        const newLists = arrayMove(currentBoard.lists, oldIndex, newIndex);
+        setCurrentBoard({ ...currentBoard, lists: newLists });
+
+        // Update positions on backend
+        try {
+          await Promise.all(
+            newLists.map((list: any, index: number) =>
+              boardsAPI.updateList(boardId!, list.id, { position: index })
+            )
+          );
+        } catch (error) {
+          console.error("Error updating list positions:", error);
+          toast.error("Failed to update list positions");
+          loadBoard(); // Reload to get correct state
+        }
+      }
+
+      // Handle task reordering or moving between lists
+      if (active.id.toString().includes("task-")) {
+        const activeTask = currentBoard.lists
+          .flatMap((list: any) => list.tasks)
+          .find((task: any) => task.id === active.id);
+
+        if (!activeTask) return;
+
+        let targetListId = activeTask.listId;
+        let newPosition = activeTask.position;
+
+        // Determine target list and position
+        if (over.id.toString().includes("list-")) {
+          targetListId = over.id;
+          newPosition = 0;
+        } else if (over.id.toString().includes("task-")) {
+          const overTask = currentBoard.lists
+            .flatMap((list: any) => list.tasks)
+            .find((task: any) => task.id === over.id);
+
+          if (overTask) {
+            targetListId = overTask.listId;
+            newPosition = overTask.position;
+          }
+        }
+
+        // Update task position/list
+        try {
+          await tasksAPI.updateTask(activeTask.id, {
+            listId: targetListId,
+            position: newPosition,
+          });
+
+          // Reload board to get updated state
+          loadBoard();
+        } catch (error) {
+          console.error("Error moving task:", error);
+          toast.error("Failed to move task");
+        }
+      }
+    }
+  };
+
+  const handleTaskClick = (task: any) => {
+    setSelectedTask(task);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleCreateTask = (listId: string) => {
+    setSelectedListId(listId);
+    setIsCreateTaskModalOpen(true);
+  };
+
+  const handleTaskCreated = (task: any) => {
+    loadBoard(); // Reload to get updated data
+  };
+
+  const handleTaskUpdated = (taskId: string, updates: any) => {
+    loadBoard(); // Reload to get updated data
+  };
+
+  const handleListCreated = (list: any) => {
+    loadBoard(); // Reload to get updated data
+  };
+
+  const handleMemberAdded = (member: any) => {
+    loadBoard(); // Reload to get updated data
+  };
+
+  const handleAITasksGenerated = async (tasks: any[]) => {
+    try {
+      // Create tasks in the first list or a default list
+      const targetListId = currentBoard?.lists[0]?.id;
+      if (!targetListId) {
+        toast.error("No list available to add tasks");
+        return;
+      }
+
+      for (const task of tasks) {
+        await tasksAPI.createTask({
+          title: task.title,
+          description: task.description,
+          listId: targetListId,
+          position: 0,
+          priority: task.priority,
+          createdById: "current-user-id", // This should come from auth context
+        });
+      }
+
+      loadBoard(); // Reload to show new tasks
+    } catch (error) {
+      console.error("Error creating AI-generated tasks:", error);
+      toast.error("Failed to create AI-generated tasks");
+    }
+  };
+
+  if (!currentBoard) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-500 dark:text-gray-400">Loading board...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredLists = currentBoard.lists.map((list: any) => ({
+    ...list,
+    tasks: list.tasks.filter(
+      (task: any) =>
+        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+  }));
+
   return (
     <div className="h-full flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
       {/* Board header */}
@@ -160,68 +252,109 @@ export default function BoardPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">{board.title}</h1>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                {currentBoard.title}
+              </h1>
               <div className="flex items-center">
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
+                  onClick={() => setIsAddMemberModalOpen(true)}
                   className="flex items-center gap-1 text-gray-600 dark:text-gray-300"
                 >
                   <Users size={16} />
                   <span>Share</span>
                 </Button>
                 <div className="h-5 border-r border-gray-300 dark:border-gray-600 mx-2"></div>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   className="flex items-center gap-1 text-gray-600 dark:text-gray-300"
                 >
-                  <Lock size={16} />
-                  <span>Private</span>
+                  {currentBoard.isPublic ? (
+                    <Users size={16} />
+                  ) : (
+                    <Lock size={16} />
+                  )}
+                  <span>{currentBoard.isPublic ? "Public" : "Private"}</span>
                 </Button>
               </div>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{board.description}</p>
+            {currentBoard.description && (
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                {currentBoard.description}
+              </p>
+            )}
           </div>
-          
+
           <div className="flex items-center gap-2">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search size={16} className="text-gray-400" />
               </div>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Search tasks..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
-            
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsAIGeneratorOpen(true)}
+              icon={<Sparkles size={16} />}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-none hover:from-purple-700 hover:to-blue-700"
+            >
+              AI Generate
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsAISummaryOpen(true)}
+              icon={<Brain size={16} />}
+            >
+              AI Insights
+            </Button>
+
             <div className="flex -space-x-2">
-              {['Alex', 'Jessica', 'Mark', 'Sarah'].map((name, i) => (
-                <div 
-                  key={i} 
-                  className={cn(
-                    "w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-white font-medium text-xs",
-                    i === 0 ? "bg-primary-500" : 
-                    i === 1 ? "bg-secondary-500" : 
-                    i === 2 ? "bg-accent-500" : 
-                    "bg-success-500"
-                  )}
-                >
-                  {name.charAt(0)}
+              {currentBoard.members
+                ?.slice(0, 4)
+                .map((member: any, i: number) => (
+                  <div
+                    key={member.id}
+                    className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-white font-medium text-xs bg-primary-500"
+                    title={member.user.name}
+                  >
+                    {member.user.avatar ? (
+                      <img
+                        src={member.user.avatar}
+                        alt={member.user.name}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      member.user.name.charAt(0)
+                    )}
+                  </div>
+                ))}
+              {currentBoard.members?.length > 4 && (
+                <div className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-xs font-medium">
+                  +{currentBoard.members.length - 4}
                 </div>
-              ))}
-              <button className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300">
+              )}
+              <button
+                onClick={() => setIsAddMemberModalOpen(true)}
+                className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300"
+              >
                 <UserPlus size={14} />
               </button>
             </div>
-            
-            <Button size="sm" icon={<Calendar size={16} />} variant="outline">
-              May 15
-            </Button>
-            
-            <Button 
-              variant="ghost" 
+
+            <Button
+              variant="ghost"
               size="sm"
               className="text-gray-600 dark:text-gray-300"
             >
@@ -230,7 +363,7 @@ export default function BoardPage() {
           </div>
         </div>
       </header>
-      
+
       {/* Board content */}
       <div className="flex-1 overflow-x-auto p-6">
         <DndContext
@@ -241,39 +374,95 @@ export default function BoardPage() {
         >
           <div className="flex gap-6 h-full">
             <SortableContext
-              items={board.lists.map(list => list.id)}
-              strategy={verticalListSortingStrategy}
+              items={filteredLists.map((list: any) => list.id)}
+              strategy={horizontalListSortingStrategy}
             >
-              {board.lists.map((list) => (
+              {filteredLists.map((list: any) => (
                 <KanbanList
                   key={list.id}
                   id={list.id}
                   title={list.title}
                   tasks={list.tasks}
+                  onTaskClick={handleTaskClick}
+                  onCreateTask={() => handleCreateTask(list.id)}
                 />
               ))}
             </SortableContext>
-            
+
             {/* Add new list button */}
             <div className="flex-shrink-0 w-72">
-              <button className="w-full h-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <button
+                onClick={() => setIsCreateListModalOpen(true)}
+                className="w-full h-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
                 <Plus size={18} />
                 <span>Add New List</span>
               </button>
             </div>
           </div>
-          
+
           <DragOverlay>
-            {activeId && activeId.toString().includes('task-') && (
+            {activeId && activeId.toString().includes("task-") && (
               <KanbanCard
-                task={board.lists
-                  .flatMap(list => list.tasks)
-                  .find(task => task.id === activeId)}
+                task={currentBoard.lists
+                  .flatMap((list: any) => list.tasks)
+                  .find((task: any) => task.id === activeId)}
               />
             )}
           </DragOverlay>
         </DndContext>
       </div>
+
+      {/* Modals */}
+      <TaskModal
+        task={selectedTask}
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        onUpdate={handleTaskUpdated}
+        boardMembers={currentBoard.members || []}
+        boardLabels={currentBoard.labels || []}
+      />
+
+      <CreateTaskModal
+        isOpen={isCreateTaskModalOpen}
+        onClose={() => setIsCreateTaskModalOpen(false)}
+        listId={selectedListId}
+        boardMembers={currentBoard.members || []}
+        boardLabels={currentBoard.labels || []}
+        onTaskCreated={handleTaskCreated}
+      />
+
+      <CreateListModal
+        isOpen={isCreateListModalOpen}
+        onClose={() => setIsCreateListModalOpen(false)}
+        boardId={boardId!}
+        onListCreated={handleListCreated}
+      />
+
+      <AddMemberModal
+        isOpen={isAddMemberModalOpen}
+        onClose={() => setIsAddMemberModalOpen(false)}
+        boardId={boardId!}
+        onMemberAdded={handleMemberAdded}
+      />
+
+      <AITaskGenerator
+        onTasksGenerated={handleAITasksGenerated}
+        boardContext={currentBoard.title}
+      />
+
+      <AISummaryPanel
+        board={currentBoard}
+        isVisible={isAISummaryOpen}
+        onClose={() => setIsAISummaryOpen(false)}
+      />
+
+      {isAIGeneratorOpen && (
+        <AITaskGenerator
+          onTasksGenerated={handleAITasksGenerated}
+          boardContext={currentBoard.title}
+        />
+      )}
     </div>
   );
 }

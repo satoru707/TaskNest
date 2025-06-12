@@ -1,37 +1,43 @@
-import { useEffect, useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useEffect, useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
 
 // Layouts
-import DashboardLayout from './layouts/DashboardLayout';
-import AuthLayout from './layouts/AuthLayout';
+import DashboardLayout from "./layouts/DashboardLayout";
+import AuthLayout from "./layouts/AuthLayout";
 
 // Pages
-import LandingPage from './pages/LandingPage';
-import Dashboard from './pages/Dashboard';
-import BoardPage from './pages/BoardPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import SettingsPage from './pages/SettingsPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import NotFoundPage from './pages/NotFoundPage';
+import LandingPage from "./pages/LandingPage";
+import Dashboard from "./pages/Dashboard";
+import BoardPage from "./pages/BoardPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import SettingsPage from "./pages/SettingsPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 // Components
-import LoadingScreen from './components/common/LoadingScreen';
+import LoadingScreen from "./components/common/LoadingScreen";
+
+// Auth sync
+import { useAuthSync } from "./lib/auth";
 
 function App() {
   const { isLoading, isAuthenticated } = useAuth0();
   const [appIsReady, setAppIsReady] = useState(false);
-  
-  // Simulate app initialization (would normally include loading data, checking auth, etc.)
+
+  // Sync user with database
+  useAuthSync();
+
+  // Simulate app initialization
   useEffect(() => {
     const timer = setTimeout(() => {
       setAppIsReady(true);
     }, 1000);
-    
+
     return () => clearTimeout(timer);
   }, []);
-  
+
   if (isLoading || !appIsReady) {
     return <LoadingScreen />;
   }
@@ -40,17 +46,21 @@ function App() {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
-      
+
       {/* Auth routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Route>
-      
+
       {/* Protected routes */}
-      <Route 
+      <Route
         element={
-          <DashboardLayout />
+          isAuthenticated ? (
+            <DashboardLayout />
+          ) : (
+            <Navigate to="/login" replace />
+          )
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
@@ -58,7 +68,18 @@ function App() {
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
-      
+
+      {/* Redirect authenticated users from auth pages */}
+      {isAuthenticated && (
+        <>
+          <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+          <Route
+            path="/register"
+            element={<Navigate to="/dashboard" replace />}
+          />
+        </>
+      )}
+
       {/* Fallback routes */}
       <Route path="/404" element={<NotFoundPage />} />
       <Route path="*" element={<Navigate to="/404" replace />} />
