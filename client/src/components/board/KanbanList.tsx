@@ -1,17 +1,25 @@
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { motion } from 'framer-motion';
-import { MoreHorizontal, Plus } from 'lucide-react';
-import KanbanCard from './KanbanCard';
-import { cn } from '../../utils/cn';
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { motion } from "framer-motion";
+import { MoreHorizontal, Plus } from "lucide-react";
+import KanbanCard from "./KanbanCard";
+import { cn } from "../../utils/cn";
 
 interface KanbanListProps {
   id: string;
   title: string;
   tasks: any[];
+  onTaskClick?: (task: any) => void;
+  onCreateTask?: () => void;
 }
 
-export default function KanbanList({ id, title, tasks }: KanbanListProps) {
+export default function KanbanList({
+  id,
+  title,
+  tasks,
+  onTaskClick,
+  onCreateTask,
+}: KanbanListProps) {
   const {
     attributes,
     listeners,
@@ -22,22 +30,22 @@ export default function KanbanList({ id, title, tasks }: KanbanListProps) {
   } = useSortable({
     id,
     data: {
-      type: 'list',
+      type: "list",
     },
   });
-  
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
-  
+
   const listColors = {
-    'To Do': 'bg-gray-100 dark:bg-gray-700',
-    'In Progress': 'bg-blue-100 dark:bg-blue-900/30',
-    'Review': 'bg-yellow-100 dark:bg-yellow-900/30',
-    'Done': 'bg-green-100 dark:bg-green-900/30',
+    "To Do": "bg-gray-100 dark:bg-gray-700",
+    "In Progress": "bg-blue-100 dark:bg-blue-900/30",
+    Review: "bg-yellow-100 dark:bg-yellow-900/30",
+    Done: "bg-green-100 dark:bg-green-900/30",
   };
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -57,28 +65,38 @@ export default function KanbanList({ id, title, tasks }: KanbanListProps) {
         className="p-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 cursor-move"
       >
         <div className="flex items-center gap-2">
-          <div className={cn(
-            "w-3 h-3 rounded-full",
-            listColors[title] || 'bg-gray-300 dark:bg-gray-600'
-          )}></div>
+          <div
+            className={cn(
+              "w-3 h-3 rounded-full",
+              listColors[title as keyof typeof listColors] ||
+                "bg-gray-300 dark:bg-gray-600"
+            )}
+          ></div>
           <h3 className="font-medium text-gray-900 dark:text-white">{title}</h3>
-          <span className="text-xs text-gray-500 dark:text-gray-400">{tasks.length}</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+            {tasks.length}
+          </span>
         </div>
-        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-          <MoreHorizontal size={18} />
+        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+          <MoreHorizontal size={16} />
         </button>
       </div>
-      
+
       {/* List content */}
       <div className="flex-1 p-3 overflow-y-auto space-y-3">
         {tasks.map((task) => (
-          <KanbanCard key={task.id} task={task} />
+          <div key={task.id} onClick={() => onTaskClick?.(task)}>
+            <KanbanCard task={task} />
+          </div>
         ))}
       </div>
-      
+
       {/* Add card button */}
       <div className="p-3 border-t border-gray-200 dark:border-gray-700">
-        <button className="w-full py-2 rounded-md flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <button
+          onClick={onCreateTask}
+          className="w-full py-2 rounded-md flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
           <Plus size={16} />
           <span>Add a card</span>
         </button>
