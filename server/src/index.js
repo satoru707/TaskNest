@@ -7,9 +7,13 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Server as SocketIOServer } from "socket.io";
 import { createServer } from "http";
 import fs from "fs/promises";
-import path from "path";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
-const uploadsDir = path.join(__dirname, "uploads");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const uploadsDir = join(__dirname, "uploads");
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
