@@ -7,6 +7,14 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Server as SocketIOServer } from "socket.io";
 import { createServer } from "http";
 import fs from "fs/promises";
+import path from "path";
+
+const uploadsDir = path.join(__dirname, "uploads");
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log("Uploads directory created");
+}
 
 // Import routes
 import authRoutes from "./routes/auth.js";
