@@ -58,7 +58,7 @@ fastify.register(websocket);
 const server = createServer(fastify.server);
 const io = new SocketIOServer(server, {
   cors: {
-    origin: process.env.SOCKET_CORS_ORIGIN || "http://localhost:5173",
+    origin: process.env.SOCKET_CORS_ORIGIN || "http://localhost:3000/socket.io",
     methods: ["GET", "POST"],
     credentials: true,
   },

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useAuth0WithUser as useAuth0 } from "../hooks/useAuth0withUser";
 import {
   Plus,
   Search,
@@ -11,6 +12,9 @@ import {
   Calendar,
   CheckSquare,
   Sparkles,
+  TrendingUp,
+  Star,
+  ArrowRight,
 } from "lucide-react";
 import {
   Card,
@@ -23,37 +27,45 @@ import CreateBoardModal from "../components/board/CreateBoardModal";
 import AITaskGenerator from "../components/ai/AITaskGenerator";
 import { boardsAPI, analyticsAPI } from "../lib/api";
 import { useBoardStore } from "../stores/useBoardStore";
+import { useCurrentUser } from "../lib/auth";
 import { toast } from "sonner";
 import { cn } from "../utils/cn";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { boards, setBoards } = useBoardStore();
+  const { dbUser } = useCurrentUser();
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterBy, setFilterBy] = useState("all");
   const [isCreateBoardModalOpen, setIsCreateBoardModalOpen] = useState(false);
   const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
   const [stats, setStats] = useState({
     totalTasks: 0,
     teamMembers: 0,
     completionRate: 0,
+    activeBoards: 0,
   });
+  const [recentActivity, setRecentActivity] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [dbUser]);
 
   const loadDashboardData = async () => {
+    if (!dbUser) return;
+
     setIsLoading(true);
     try {
       // Load boards
-      const boardsResponse = await boardsAPI.getBoards("current-user-id"); // This should come from auth context
+
+      const boardsResponse = await boardsAPI.getBoards(dbUser.id);
       setBoards(boardsResponse.data.boards);
 
       // Load analytics
       try {
         const analyticsResponse = await analyticsAPI.getUserAnalytics(
-          "current-user-id"
+          dbUser.id
         );
         setStats({
           totalTasks:
@@ -65,10 +77,29 @@ export default function Dashboard() {
           ),
           completionRate:
             analyticsResponse.data.overview.assignedCompletionRate,
+          activeBoards: boardsResponse.data.boards.length,
         });
+        setRecentActivity(analyticsResponse.data.recentActivities.slice(0, 5));
       } catch (analyticsError) {
         // Analytics might fail, but we can still show boards
         console.warn("Failed to load analytics:", analyticsError);
+        setStats({
+          totalTasks: boardsResponse.data.boards.reduce(
+            (acc: number, board: any) =>
+              acc +
+              board.lists.reduce(
+                (listAcc: number, list: any) => listAcc + list.tasks.length,
+                0
+              ),
+            0
+          ),
+          teamMembers: boardsResponse.data.boards.reduce(
+            (acc: number, board: any) => acc + board.members.length,
+            0
+          ),
+          completionRate: 0,
+          activeBoards: boardsResponse.data.boards.length,
+        });
       }
     } catch (error) {
       console.error("Error loading dashboard data:", error);
@@ -81,6 +112,7 @@ export default function Dashboard() {
   const handleBoardCreated = (board: any) => {
     setBoards([board, ...boards]);
     navigate(`/boards/${board.id}`);
+    toast.success("Board created successfully");
   };
 
   const handleAITasksGenerated = async (tasks: any[]) => {
@@ -89,11 +121,36 @@ export default function Dashboard() {
     toast.success(`Generated ${tasks.length} AI tasks`);
   };
 
-  const filteredBoards = boards.filter(
-    (board) =>
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case "create-board":
+        setIsCreateBoardModalOpen(true);
+        break;
+      case "ai-generate":
+        setIsAIGeneratorOpen(true);
+        break;
+      case "analytics":
+        navigate("/analytics");
+        break;
+      case "settings":
+        navigate("/settings");
+        break;
+    }
+  };
+
+  const filteredBoards = boards.filter((board) => {
+    const matchesSearch =
       board.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      board.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      board.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (filterBy === "all") return matchesSearch;
+    if (filterBy === "owned")
+      return matchesSearch && board.ownerId === dbUser?.id;
+    if (filterBy === "shared")
+      return matchesSearch && board.ownerId !== dbUser?.id;
+
+    return matchesSearch;
+  });
 
   const recentBoards = filteredBoards.slice(0, 6);
 
@@ -104,8 +161,8 @@ export default function Dashboard() {
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-8"></div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {[...Array(3)].map((_, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
               <div
                 key={i}
                 className="h-24 bg-gray-200 dark:bg-gray-700 rounded-lg"
@@ -113,13 +170,29 @@ export default function Dashboard() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="h-48 bg-gray-200 dark:bg-gray-700 rounded-lg"
-              ></div>
-            ))}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-48 bg-gray-200 dark:bg-gray-700 rounded-lg"
+                  ></div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"
+                  ></div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -128,26 +201,27 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Dashboard
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Welcome back, {dbUser?.name?.split(" ")[0] || "there"}! 👋
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-1">
-            Welcome back! Here's an overview of your projects.
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
+            Here's what's happening with your projects today.
           </p>
         </div>
-        <div className="mt-4 md:mt-0 flex gap-2">
+        <div className="mt-4 lg:mt-0 flex flex-wrap gap-3">
           <Button
             variant="outline"
-            onClick={() => setIsAIGeneratorOpen(true)}
+            onClick={() => handleQuickAction("ai-generate")}
             icon={<Sparkles size={18} />}
             className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-none hover:from-purple-700 hover:to-blue-700"
           >
             AI Generate
           </Button>
           <Button
-            onClick={() => setIsCreateBoardModalOpen(true)}
+            onClick={() => handleQuickAction("create-board")}
             icon={<Plus size={18} />}
           >
             New Board
@@ -155,32 +229,48 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {[
           {
             id: 1,
-            name: "Total Tasks",
-            value: stats.totalTasks.toString(),
-            icon: <CheckSquare size={20} />,
-            change: "+12%",
+            name: "Active Boards",
+            value: stats.activeBoards.toString(),
+            icon: <BarChart2 size={20} />,
+            change: "+2 this week",
             changeType: "increase",
+            color: "text-primary-600 dark:text-primary-400",
+            bgColor: "bg-primary-100 dark:bg-primary-900/30",
           },
           {
             id: 2,
-            name: "Team Members",
-            value: stats.teamMembers.toString(),
-            icon: <Users size={20} />,
-            change: "+2",
+            name: "Total Tasks",
+            value: stats.totalTasks.toString(),
+            icon: <CheckSquare size={20} />,
+            change: "+12 this week",
             changeType: "increase",
+            color: "text-secondary-600 dark:text-secondary-400",
+            bgColor: "bg-secondary-100 dark:bg-secondary-900/30",
           },
           {
             id: 3,
+            name: "Team Members",
+            value: stats.teamMembers.toString(),
+            icon: <Users size={20} />,
+            change: "+3 this month",
+            changeType: "increase",
+            color: "text-accent-600 dark:text-accent-400",
+            bgColor: "bg-accent-100 dark:bg-accent-900/30",
+          },
+          {
+            id: 4,
             name: "Completion Rate",
             value: `${Math.round(stats.completionRate)}%`,
-            icon: <BarChart2 size={20} />,
-            change: "+5%",
+            icon: <TrendingUp size={20} />,
+            change: "+5% this week",
             changeType: "increase",
+            color: "text-success-600 dark:text-success-400",
+            bgColor: "bg-success-100 dark:bg-success-900/30",
           },
         ].map((stat) => (
           <motion.div
@@ -189,30 +279,28 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: stat.id * 0.1 }}
           >
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow duration-200">
               <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div
-                    className={cn(
-                      "w-12 h-12 rounded-lg flex items-center justify-center mr-4",
-                      stat.id === 1
-                        ? "bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
-                        : stat.id === 2
-                        ? "bg-secondary-100 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400"
-                        : "bg-accent-100 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400"
-                    )}
-                  >
-                    {stat.icon}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div
+                      className={cn(
+                        "w-12 h-12 rounded-xl flex items-center justify-center mr-4",
+                        stat.bgColor
+                      )}
+                    >
+                      <span className={stat.color}>{stat.icon}</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        {stat.name}
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                        {stat.value}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      {stat.name}
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                      {stat.value}
-                    </p>
-                  </div>
-                  <div className="ml-auto">
+                  <div className="text-right">
                     <span
                       className={cn(
                         "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
@@ -231,207 +319,320 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Recent Boards */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Recent Boards
-          </h2>
-          <div className="mt-2 sm:mt-0 flex space-x-2">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={16} className="text-gray-400" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Recent Boards */}
+        <div className="lg:col-span-2">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Your Boards
+            </h2>
+            <div className="mt-3 sm:mt-0 flex flex-wrap gap-2">
+              <div className="relative">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type="text"
+                  placeholder="Search boards..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
               </div>
-              <input
-                type="text"
-                placeholder="Search boards..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
+              <select
+                value={filterBy}
+                onChange={(e) => setFilterBy(e.target.value)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="all">All Boards</option>
+                <option value="owned">Owned by me</option>
+                <option value="shared">Shared with me</option>
+              </select>
             </div>
-            <Button variant="outline" size="sm" icon={<Filter size={16} />}>
-              Filter
-            </Button>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {recentBoards.map((board, index) => (
-            <motion.div
-              key={board.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
-            >
-              <Link to={`/boards/${board.id}`}>
-                <Card className="h-full hover:shadow-md transition-shadow duration-200 group">
-                  <CardHeader>
-                    <CardTitle className="truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                      {board.title}
-                    </CardTitle>
-                    {board.description && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                        {board.description}
-                      </p>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500 dark:text-gray-400">
-                          Progress
-                        </span>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">
-                          {board.lists?.reduce(
-                            (acc: number, list: any) =>
-                              acc +
-                              list.tasks.filter((task: any) => task.completed)
-                                .length,
-                            0
-                          ) || 0}
-                          /
-                          {board.lists?.reduce(
-                            (acc: number, list: any) => acc + list.tasks.length,
-                            0
-                          ) || 0}{" "}
-                          tasks
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary-500 rounded-full transition-all duration-300"
-                          style={{
-                            width: `${
-                              board.lists?.reduce(
-                                (acc: number, list: any) =>
-                                  acc + list.tasks.length,
-                                0
-                              ) > 0
-                                ? (board.lists.reduce(
-                                    (acc: number, list: any) =>
-                                      acc +
-                                      list.tasks.filter(
-                                        (task: any) => task.completed
-                                      ).length,
-                                    0
-                                  ) /
-                                    board.lists.reduce(
-                                      (acc: number, list: any) =>
-                                        acc + list.tasks.length,
-                                      0
-                                    )) *
-                                  100
-                                : 0
-                            }%`,
-                          }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <div className="flex items-center text-gray-500 dark:text-gray-400">
-                          <Users size={16} className="mr-1" />
-                          <span>{board.members?.length || 0} members</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {recentBoards.map((board, index) => (
+              <motion.div
+                key={board.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
+              >
+                <Link to={`/boards/${board.id}`}>
+                  <Card className="h-full hover:shadow-lg transition-all duration-200 group cursor-pointer">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <CardTitle className="truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                          {board.title}
+                        </CardTitle>
+                        <div className="flex items-center gap-1">
+                          {board.isPublic ? (
+                            <div
+                              className="w-2 h-2 bg-green-500 rounded-full"
+                              title="Public board"
+                            />
+                          ) : (
+                            <div
+                              className="w-2 h-2 bg-gray-400 rounded-full"
+                              title="Private board"
+                            />
+                          )}
                         </div>
-                        <span className="text-gray-500 dark:text-gray-400">
-                          Updated{" "}
-                          {new Date(board.updatedAt).toLocaleDateString()}
-                        </span>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </motion.div>
-          ))}
+                      {board.description && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">
+                          {board.description}
+                        </p>
+                      )}
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="space-y-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500 dark:text-gray-400">
+                            Progress
+                          </span>
+                          <span className="font-medium text-gray-700 dark:text-gray-300">
+                            {board.lists?.reduce(
+                              (acc: number, list: any) =>
+                                acc +
+                                list.tasks.filter((task: any) => task.completed)
+                                  .length,
+                              0
+                            ) || 0}
+                            /
+                            {board.lists?.reduce(
+                              (acc: number, list: any) =>
+                                acc + list.tasks.length,
+                              0
+                            ) || 0}{" "}
+                            tasks
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full transition-all duration-300"
+                            style={{
+                              width: `${
+                                board.lists?.reduce(
+                                  (acc: number, list: any) =>
+                                    acc + list.tasks.length,
+                                  0
+                                ) > 0
+                                  ? (board.lists.reduce(
+                                      (acc: number, list: any) =>
+                                        acc +
+                                        list.tasks.filter(
+                                          (task: any) => task.completed
+                                        ).length,
+                                      0
+                                    ) /
+                                      board.lists.reduce(
+                                        (acc: number, list: any) =>
+                                          acc + list.tasks.length,
+                                        0
+                                      )) *
+                                    100
+                                  : 0
+                              }%`,
+                            }}
+                          ></div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                            <Users size={16} className="mr-1" />
+                            <span>{board.members?.length || 0} members</span>
+                          </div>
+                          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                            <Clock size={16} className="mr-1" />
+                            <span>
+                              {new Date(board.updatedAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </motion.div>
+            ))}
 
-          {/* Create new board card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.3,
-              delay: 0.2 + recentBoards.length * 0.1,
-            }}
-          >
-            <Card
-              className="h-full border-2 border-dashed border-gray-300 dark:border-gray-700 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200 flex flex-col items-center justify-center p-6 cursor-pointer group"
-              onClick={() => setIsCreateBoardModalOpen(true)}
-            >
-              <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 mb-3 group-hover:scale-110 transition-transform">
-                <Plus size={24} />
-              </div>
-              <h3 className="text-gray-900 dark:text-white font-medium text-lg mb-1">
-                Create New Board
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm text-center">
-                Start a new project or organize tasks
-              </p>
-            </Card>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            {
-              title: "Create Task",
-              icon: <Plus size={20} />,
-              color:
-                "bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400",
-              onClick: () => setIsCreateBoardModalOpen(true),
-            },
-            {
-              title: "View Analytics",
-              icon: <BarChart2 size={20} />,
-              color:
-                "bg-secondary-100 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400",
-              onClick: () => navigate("/analytics"),
-            },
-            {
-              title: "Team Members",
-              icon: <Users size={20} />,
-              color:
-                "bg-accent-100 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400",
-              onClick: () => navigate("/settings"),
-            },
-            {
-              title: "AI Generate",
-              icon: <Sparkles size={20} />,
-              color:
-                "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
-              onClick: () => setIsAIGeneratorOpen(true),
-            },
-          ].map((action, index) => (
+            {/* Create new board card */}
             <motion.div
-              key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.4 + index * 0.1 }}
-              className="cursor-pointer"
-              onClick={action.onClick}
+              transition={{
+                duration: 0.3,
+                delay: 0.2 + recentBoards.length * 0.1,
+              }}
             >
-              <Card className="hover:shadow-md transition-shadow duration-200 group">
-                <CardContent className="p-4 flex items-center">
-                  <div
-                    className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform",
-                      action.color
-                    )}
-                  >
-                    {action.icon}
-                  </div>
-                  <span className="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                    {action.title}
-                  </span>
-                </CardContent>
+              <Card
+                className="h-full border-2 border-dashed border-gray-300 dark:border-gray-700 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200 flex flex-col items-center justify-center p-8 cursor-pointer group"
+                onClick={() => handleQuickAction("create-board")}
+              >
+                <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 mb-4 group-hover:scale-110 transition-transform">
+                  <Plus size={32} />
+                </div>
+                <h3 className="text-gray-900 dark:text-white font-medium text-lg mb-2">
+                  Create New Board
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm text-center">
+                  Start a new project or organize your tasks
+                </p>
               </Card>
             </motion.div>
-          ))}
+          </div>
+
+          {filteredBoards.length > 6 && (
+            <div className="mt-6 text-center">
+              <Button
+                variant="outline"
+                icon={<ArrowRight size={16} />}
+                iconPosition="right"
+              >
+                View All Boards ({filteredBoards.length})
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  {
+                    title: "Create Board",
+                    icon: <Plus size={18} />,
+                    color: "text-primary-600 dark:text-primary-400",
+                    bgColor: "bg-primary-100 dark:bg-primary-900/30",
+                    action: "create-board",
+                  },
+                  {
+                    title: "View Analytics",
+                    icon: <BarChart2 size={18} />,
+                    color: "text-secondary-600 dark:text-secondary-400",
+                    bgColor: "bg-secondary-100 dark:bg-secondary-900/30",
+                    action: "analytics",
+                  },
+                  {
+                    title: "AI Generate",
+                    icon: <Sparkles size={18} />,
+                    color: "text-purple-600 dark:text-purple-400",
+                    bgColor: "bg-purple-100 dark:bg-purple-900/30",
+                    action: "ai-generate",
+                  },
+                  {
+                    title: "Settings",
+                    icon: <Users size={18} />,
+                    color: "text-accent-600 dark:text-accent-400",
+                    bgColor: "bg-accent-100 dark:bg-accent-900/30",
+                    action: "settings",
+                  },
+                ].map((action, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.4 + index * 0.1 }}
+                    className="cursor-pointer"
+                    onClick={() => handleQuickAction(action.action)}
+                  >
+                    <div className="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
+                      <div
+                        className={cn(
+                          "w-10 h-10 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform",
+                          action.bgColor
+                        )}
+                      >
+                        <span className={action.color}>{action.icon}</span>
+                      </div>
+                      <span className="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                        {action.title}
+                      </span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activity */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recentActivity.length > 0 ? (
+                <div className="space-y-4">
+                  {recentActivity.map((activity: any, index) => (
+                    <motion.div
+                      key={activity.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
+                      className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
+                        <CheckSquare
+                          size={14}
+                          className="text-primary-600 dark:text-primary-400"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {activity.type
+                            .replace("_", " ")
+                            .toLowerCase()
+                            .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {activity.board?.title} •{" "}
+                          {new Date(activity.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Clock className="mx-auto text-gray-400 mb-4" size={48} />
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No recent activity
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Productivity Tip */}
+          <Card className="bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/20 dark:to-secondary-900/20 border-primary-200 dark:border-primary-800">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
+                  <Star
+                    size={20}
+                    className="text-primary-600 dark:text-primary-400"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-2">
+                    Productivity Tip
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Try using AI task generation to break down complex projects
+                    into manageable tasks. It can save you hours of planning!
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 

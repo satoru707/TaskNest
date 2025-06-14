@@ -31,13 +31,21 @@ export default function CreateBoardModal({
     if (!title.trim()) return;
 
     setIsSubmitting(true);
+    console.log("isSubmitting");
+
     try {
-      const response = await boardsAPI.createBoard({
+      const data = {
         title: title.trim(),
         description: description.trim() || undefined,
         ownerId: id.dbUser.auth0Id, // This should come from auth context
         isPublic,
-      });
+      };
+      console.log(data);
+
+      const response = await boardsAPI.createBoard(data);
+      console.log("wrfw");
+
+      console.log(response);
 
       onBoardCreated(response.data.board);
       onClose();

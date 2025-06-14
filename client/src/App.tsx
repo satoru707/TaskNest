@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
-
+import { useAuth0WithUser as useAuth0 } from "./hooks/useAuth0withUser";
 // Layouts
 import DashboardLayout from "./layouts/DashboardLayout";
 import AuthLayout from "./layouts/AuthLayout";

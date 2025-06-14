@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth0WithUser as useAuth0 } from "../hooks/useAuth0withUser";
 import {
   Card,
   CardHeader,
@@ -16,12 +16,26 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(
+    e: React.FormEvent,
+    email: string,
+    password: string
+  ) {
+    e.preventDefault();
+    loginWithRedirect({
+      authorizationParams: {
+        connection: "Username-Password-Authentication",
+        login_hint: email,
+        password,
+      },
+    });
+  }
+  const handleSubmitGoogle = async (e: React.FormEvent) => {
     e.preventDefault();
 
     loginWithRedirect({
       authorizationParams: {
-        screen_hint: "signup",
+        connection: "google-oauth2",
         redirect_uri: `${
           import.meta.env.VITE_FRONTURL || "http://localhost:5173"
         }/dashboard`,
@@ -29,6 +43,18 @@ export default function LoginPage() {
     });
   };
 
+  const handleSubmitGithub = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    loginWithRedirect({
+      authorizationParams: {
+        connection: "github",
+        redirect_uri: `${
+          import.meta.env.VITE_FRONTURL || "http://localhost:5173"
+        }/dashboard`,
+      },
+    });
+  };
   useEffect(() => {
     if (isAuthenticated) {
       window.location.href = "/dashboard";
@@ -152,7 +178,7 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={handleSubmit}
+                onClick={handleSubmitGoogle}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <svg
@@ -181,7 +207,7 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                onClick={handleSubmit}
+                onClick={handleSubmitGithub}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <svg

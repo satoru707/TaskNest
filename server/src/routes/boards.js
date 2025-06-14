@@ -140,13 +140,22 @@ const boardRoutes = async (fastify) => {
 
   // Create a new board
   fastify.post("/", async (request, reply) => {
+    console.log("tecca");
+
     try {
       const { title, description, ownerId, isPublic } = request.body;
+      // console.log(title, ownerId);
+      // console.log("route");
+
+      const userExists = await prisma.user.findUnique({
+        where: { auth0Id: ownerId }, // or auth0Id if you use that
+      });
+
       const board = await prisma.board.create({
         data: {
           title,
           description,
-          ownerId,
+          ownerId: userExists.id,
           isPublic: isPublic || false,
         },
         include: {
@@ -159,6 +168,7 @@ const boardRoutes = async (fastify) => {
           lists: true,
         },
       });
+      console.log(board, "8hhy8h8yh8yh8yh");
 
       // Create activity
       await prisma.activity.create({
@@ -166,9 +176,11 @@ const boardRoutes = async (fastify) => {
           type: "BOARD_CREATED",
           data: { boardTitle: title },
           boardId: board.id,
-          userId: ownerId,
+          userId: userExists.id,
         },
       });
+      console.log("frrwfjwrfn");
+      console.log(board);
 
       return { board };
     } catch (error) {

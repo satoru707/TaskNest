@@ -1,4 +1,4 @@
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth0WithUser as useAuth0 } from "../hooks/useAuth0withUser";
 import { useEffect } from "react";
 import { authAPI } from "./api";
 import { useAuthStore } from "../stores/useAuthStore";
