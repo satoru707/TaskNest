@@ -644,7 +644,7 @@ export default function LandingPage() {
                   </svg>
                 </a>
                 <a
-                  href="#"
+                  href="https://github.com/satoru707/TaskNest"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   <svg
@@ -660,7 +660,7 @@ export default function LandingPage() {
                   </svg>
                 </a>
                 <a
-                  href="#"
+                  href="https://www.linkedin.com/in/thepraiseolaoye"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   <svg
