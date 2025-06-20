@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth0WithUser as useAuth0 } from "../hooks/useAuth0withUser";
+// import { authAPI } from "../lib/api";
 import {
   Card,
   CardHeader,
@@ -10,30 +11,92 @@ import {
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { Mail, Lock, User } from "lucide-react";
+import axios from "axios";
+import { authAPI } from "../lib/api";
 
 export default function RegisterPage() {
-  const { loginWithRedirect, loginWithPopup } = useAuth0();
+  const { loginWithRedirect } = useAuth0();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  console.log(useAuth0());
+  const [error, setError] = useState("");
 
-  async function handleSubmit(
-    e: React.FormEvent,
-    email: string,
-    password: string
-  ) {
-    e.preventDefault();
-    loginWithPopup({
-      authorizationParams: {
-        connection: "Username-Password-Authentication",
-        login_hint: email,
-        password, // Only works with custom domains + CORS
-      },
-    }).catch((error) => {
-      console.error("Login failed:", error);
-    });
+  function validatePassword(password: string, options = {}) {
+    const config = {
+      minLength: 8,
+      needsDigit: true,
+      needsSpecialChar: true,
+      needsUppercase: false,
+      needsLowercase: false,
+      ...options, // Override defaults
+    };
+
+    const errors = [];
+    const tests = {
+      length: password.length >= config.minLength,
+      digit: !config.needsDigit || /\d/.test(password),
+      specialChar:
+        !config.needsSpecialChar ||
+        /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+      uppercase: !config.needsUppercase || /[A-Z]/.test(password),
+      lowercase: !config.needsLowercase || /[a-z]/.test(password),
+    };
+
+    if (!tests.length) errors.push(`Minimum ${config.minLength} characters`);
+    if (!tests.digit) errors.push("At least one number");
+    if (!tests.specialChar) errors.push("At least one special character");
+    if (!tests.uppercase) errors.push("At least one uppercase letter");
+    if (!tests.lowercase) errors.push("At least one lowercase letter");
+
+    return {
+      isValid: errors.length === 0,
+      requirements: config,
+      errors,
+      message: errors.length ? errors.join("\n") : "Valid password",
+    };
   }
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const valid = validatePassword(password);
+    if (!valid.isValid) {
+      setError(valid.message);
+      return;
+    }
+
+    try {
+      const response: any = await authAPI.registerUser({
+        email,
+        password,
+        name,
+      });
+
+      console.log(response);
+      if (response.success) {
+        loginWithRedirect({
+          authorizationParams: {
+            redirect_uri: `${
+              import.meta.env.VITE_FRONTURL || "http://localhost:5173"
+            }/dashboard`,
+          },
+        });
+      } else {
+        if (response.error == "User exists!") {
+          setError("User already exists!");
+        }
+      }
+
+      //I have the user now
+      // Store tokens securely (consider httpOnly cookies for production)
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error("Login failed:", error.response?.data);
+        alert(error.response?.data.error || "Login failed");
+      } else {
+        console.error("Unexpected error:", error);
+      }
+    }
+  }
+
   const handleSubmitGoogle = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -59,6 +122,13 @@ export default function RegisterPage() {
       },
     });
   };
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(""), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -149,9 +219,8 @@ export default function RegisterPage() {
                   placeholder="••••••••"
                 />
               </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Must be at least 8 characters with a number and special
-                character
+              <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+                {error ? error : null}
               </p>
             </div>
 

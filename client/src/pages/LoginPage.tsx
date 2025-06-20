@@ -10,39 +10,50 @@ import {
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { Mail, Lock } from "lucide-react";
+import axios from "axios";
 
 export default function LoginPage() {
   const { loginWithRedirect, isAuthenticated } = useAuth0();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  async function handleSubmit(
-    e: React.FormEvent,
-    email: string,
-    password: string
-  ) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    loginWithRedirect({
-      authorizationParams: {
-        connection: "Username-Password-Authentication",
-        login_hint: email,
-        password,
-      },
-    });
+    try {
+      const response: any = await axios.post(
+        `http://localhost:3000/api/auth/login`,
+        {
+          email,
+          password,
+        }
+      );
+      if (response.success) {
+        loginWithRedirect({
+          authorizationParams: {
+            redirect_uri: `${
+              import.meta.env.VITE_FRONTURL || "http://localhost:5173"
+            }/dashboard`,
+          },
+        });
+      } else {
+        if (response.error) {
+          setError(response.error);
+        } else {
+          setError("Error logging in.");
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
-  const handleSubmitGoogle = async (e: React.FormEvent) => {
-    e.preventDefault();
 
-    loginWithRedirect({
-      authorizationParams: {
-        connection: "google-oauth2",
-        redirect_uri: `${
-          import.meta.env.VITE_FRONTURL || "http://localhost:5173"
-        }/dashboard`,
-      },
-    });
-  };
-
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(""), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
   const handleSubmitGithub = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -60,6 +71,19 @@ export default function LoginPage() {
       window.location.href = "/dashboard";
     }
   }, []);
+
+  const handleSubmitGoogle = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    loginWithRedirect({
+      authorizationParams: {
+        connection: "google-oauth2",
+        redirect_uri: `${
+          import.meta.env.VITE_FRONTURL || "http://localhost:5173"
+        }/dashboard`,
+      },
+    });
+  };
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -130,6 +154,9 @@ export default function LoginPage() {
                   placeholder="••••••••"
                 />
               </div>
+              <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+                {error ? error : null}
+              </p>
             </div>
 
             <div className="flex items-center justify-between">

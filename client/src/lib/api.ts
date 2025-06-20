@@ -12,7 +12,12 @@ export const authAPI = {
   createOrUpdateProfile: (profileData: any) =>
     api.post("/auth/profile", profileData),
 
+  registerUser: (user: any) => api.post("/auth/register", user),
+
   getProfile: (auth0Id: string) => api.get(`/auth/profile/${auth0Id}`),
+
+  registerWithDetails: (email: string, password: string, name?: string) =>
+    api.post("/auth/registerwithdetails", { email, password, name }),
 
   updateProfile: (auth0Id: string, data: any) =>
     api.put(`/auth/profile/${auth0Id}`, data),

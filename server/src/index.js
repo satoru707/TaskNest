@@ -127,7 +127,7 @@ async function start() {
     const port = parseInt(process.env.PORT || "3001");
     await fastify.listen({
       port,
-      host: "0.0.0.0", // 👈 Critical for Render.com
+      host: "0.0.0.0",
     });
     console.log(`Server running on PORT ${port}`);
   } catch (err) {
