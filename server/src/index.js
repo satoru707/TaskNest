@@ -9,6 +9,7 @@ import { createServer } from "http";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import "dotenv/config";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -45,6 +46,8 @@ const fastify = Fastify({
 fastify.register(cors, {
   origin: process.env.SOCKET_CORS_ORIGIN || "http://localhost:5173",
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 });
 
 fastify.register(multipart, {

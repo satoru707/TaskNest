@@ -11,7 +11,7 @@ export const useAuth0WithUser = () => {
     try {
       // Check if user exists
       const { data: existingUser } = await axios.get(
-        `${import.meta.env.VITE_API_URL}/users/${user.sub}`
+        `${import.meta.env.VITE_API_URL}/users/${user?.sub}`
       );
       console.log("Existing user:", existingUser);
 
@@ -22,10 +22,10 @@ export const useAuth0WithUser = () => {
         const { data: newUser } = await axios.post(
           `${import.meta.env.VITE_API_URL}/users`,
           {
-            auth0Id: user.sub,
-            email: user.email,
-            name: user.name,
-            avatar: user.picture,
+            auth0Id: user?.sub,
+            email: user?.email,
+            name: user?.name,
+            avatar: user?.picture,
           }
         );
         console.log("New user created:", newUser);
