@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { X, Plus, Lock, Globe } from "lucide-react";
 import Button from "../ui/Button";
 import { boardsAPI } from "../../lib/api";
+import { useCurrentUser } from "../../lib/auth";
 import { toast } from "sonner";
 import { cn } from "../../utils/cn";
-import { useAuthStore } from "../../stores/useAuthStore";
 
 interface CreateBoardModalProps {
   isOpen: boolean;
@@ -18,34 +18,26 @@ export default function CreateBoardModal({
   onClose,
   onBoardCreated,
 }: CreateBoardModalProps) {
+  const { dbUser } = useCurrentUser();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const id = useAuthStore();
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || !dbUser) return;
 
     setIsSubmitting(true);
-    console.log("isSubmitting");
-
     try {
-      const data = {
+      const response = await boardsAPI.createBoard({
         title: title.trim(),
         description: description.trim() || undefined,
-        ownerId: id.dbUser.auth0Id, // This should come from auth context
+        ownerId: dbUser.id,
         isPublic,
-      };
-      console.log(data);
-
-      const response = await boardsAPI.createBoard(data);
-      console.log("wrfw");
-
-      console.log(response);
+      });
 
       onBoardCreated(response.data.board);
       onClose();
@@ -154,13 +146,25 @@ export default function CreateBoardModal({
                   size={20}
                   className="text-gray-600 dark:text-gray-400 mr-3"
                 />
-                <div>
+                <div className="flex-1">
                   <h4 className="font-medium text-gray-900 dark:text-white">
                     Private
                   </h4>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Only board members can see and edit
                   </p>
+                </div>
+                <div
+                  className={cn(
+                    "w-4 h-4 rounded-full border-2",
+                    !isPublic
+                      ? "border-primary-500 bg-primary-500"
+                      : "border-gray-300 dark:border-gray-600"
+                  )}
+                >
+                  {!isPublic && (
+                    <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                  )}
                 </div>
               </div>
 
@@ -177,13 +181,25 @@ export default function CreateBoardModal({
                   size={20}
                   className="text-gray-600 dark:text-gray-400 mr-3"
                 />
-                <div>
+                <div className="flex-1">
                   <h4 className="font-medium text-gray-900 dark:text-white">
                     Public
                   </h4>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Anyone can see this board
                   </p>
+                </div>
+                <div
+                  className={cn(
+                    "w-4 h-4 rounded-full border-2",
+                    isPublic
+                      ? "border-primary-500 bg-primary-500"
+                      : "border-gray-300 dark:border-gray-600"
+                  )}
+                >
+                  {isPublic && (
+                    <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                  )}
                 </div>
               </div>
             </div>
@@ -198,6 +214,7 @@ export default function CreateBoardModal({
               type="submit"
               isLoading={isSubmitting}
               icon={<Plus size={16} />}
+              disabled={!title.trim()}
             >
               Create Board
             </Button>

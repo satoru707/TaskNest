@@ -20,12 +20,18 @@ import {
   Users,
   Calendar,
   Archive,
+  Zap,
+  Target,
+  Activity,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useCurrentUser } from "../lib/auth";
 import { cn } from "../utils/cn";
 import { motion, AnimatePresence } from "framer-motion";
 import Button from "../components/ui/Button";
+import { boardsAPI } from "../lib/api";
+import { useBoardStore } from "../stores/useBoardStore";
+import { toast } from "sonner";
 
 const navItems = [
   {
@@ -37,22 +43,19 @@ const navItems = [
   { path: "/settings", label: "Settings", icon: <Settings size={20} /> },
 ];
 
-const quickActions = [
-  { label: "New Board", icon: <Plus size={16} />, action: "create-board" },
-  { label: "New Task", icon: <CheckSquare size={16} />, action: "create-task" },
-  { label: "Calendar", icon: <Calendar size={16} />, action: "calendar" },
-];
-
 export default function DashboardLayout() {
   const { logout } = useAuth0();
   const { user, dbUser } = useCurrentUser();
+  const { boards, setBoards } = useBoardStore();
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, setTheme, isDarkMode } = useTheme();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications] = useState([
+  const [notifications, setNotifications] = useState([
     {
       id: 1,
       title: "New task assigned",
@@ -75,6 +78,8 @@ export default function DashboardLayout() {
       unread: false,
     },
   ]);
+  const [recentBoards, setRecentBoards] = useState<any[]>([]);
+  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
   const handleLogout = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
@@ -88,26 +93,131 @@ export default function DashboardLayout() {
     setTheme(newTheme);
   };
 
+  // Load boards for search and recent boards
+  useEffect(() => {
+    const loadBoards = async () => {
+      if (!dbUser) return;
+
+      try {
+        const response = await boardsAPI.getBoards(dbUser.id);
+        setBoards(response.data.boards);
+        setRecentBoards(response.data.boards.slice(0, 5));
+      } catch (error) {
+        console.error("Error loading boards:", error);
+      }
+    };
+
+    loadBoards();
+  }, [dbUser, setBoards]);
+
+  // Search functionality
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!searchQuery.trim()) {
+        setSearchResults([]);
+        setShowSearchResults(false);
+        return;
+      }
+
+      setIsLoadingSearch(true);
+      try {
+        // Search through boards and tasks
+        const results: any[] = [];
+
+        boards.forEach((board) => {
+          // Search board titles and descriptions
+          if (
+            board.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            board.description?.toLowerCase().includes(searchQuery.toLowerCase())
+          ) {
+            results.push({
+              type: "board",
+              id: board.id,
+              title: board.title,
+              description: board.description,
+              path: `/boards/${board.id}`,
+            });
+          }
+
+          // Search tasks within boards
+          board.lists?.forEach((list: any) => {
+            list.tasks?.forEach((task: any) => {
+              if (
+                task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                task.description
+                  ?.toLowerCase()
+                  .includes(searchQuery.toLowerCase())
+              ) {
+                results.push({
+                  type: "task",
+                  id: task.id,
+                  title: task.title,
+                  description: task.description,
+                  boardTitle: board.title,
+                  listTitle: list.title,
+                  path: `/boards/${board.id}?task=${task.id}`,
+                });
+              }
+            });
+          });
+        });
+
+        setSearchResults(results.slice(0, 10)); // Limit to 10 results
+        setShowSearchResults(true);
+      } catch (error) {
+        console.error("Search error:", error);
+      } finally {
+        setIsLoadingSearch(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(performSearch, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, boards]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      // Implement global search functionality
-      console.log("Searching for:", searchQuery);
+    if (searchResults.length > 0) {
+      navigate(searchResults[0].path);
+      setSearchQuery("");
+      setShowSearchResults(false);
     }
   };
 
   const handleQuickAction = (action: string) => {
     switch (action) {
       case "create-board":
-        // Trigger create board modal
+        navigate("/dashboard");
+        // Trigger create board modal (would need to be implemented in Dashboard)
         break;
       case "create-task":
-        // Trigger create task modal
+        if (recentBoards.length > 0) {
+          navigate(`/boards/${recentBoards[0].id}`);
+        } else {
+          toast.info("Create a board first to add tasks");
+        }
         break;
       case "calendar":
-        // Navigate to calendar view
+        toast.info("Calendar view coming soon!");
+        break;
+      case "ai-generate":
+        navigate("/dashboard");
         break;
     }
+  };
+
+  const markNotificationAsRead = (notificationId: number) => {
+    setNotifications((prev) =>
+      prev.map((notif) =>
+        notif.id === notificationId ? { ...notif, unread: false } : notif
+      )
+    );
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications((prev) =>
+      prev.map((notif) => ({ ...notif, unread: false }))
+    );
   };
 
   // Close sidebar on mobile when route changes
@@ -132,11 +242,17 @@ export default function DashboardLayout() {
             break;
         }
       }
+      if (e.key === "Escape") {
+        setShowSearchResults(false);
+        setShowNotifications(false);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
@@ -179,8 +295,10 @@ export default function DashboardLayout() {
             className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <Bell size={20} />
-            {notifications.some((n) => n.unread) && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                {unreadCount}
+              </span>
             )}
           </button>
           <div className="w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center overflow-hidden">
@@ -249,7 +367,7 @@ export default function DashboardLayout() {
 
             {/* Search */}
             {isSidebarOpen && (
-              <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-700 relative">
                 <form onSubmit={handleSearch} className="relative">
                   <Search
                     size={16}
@@ -261,9 +379,66 @@ export default function DashboardLayout() {
                     placeholder="Search... (⌘K)"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => searchQuery && setShowSearchResults(true)}
                     className="w-full pl-10 pr-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                   />
                 </form>
+
+                {/* Search Results */}
+                {showSearchResults && (
+                  <div className="absolute top-full left-4 right-4 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+                    {isLoadingSearch ? (
+                      <div className="p-4 text-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      <div className="py-2">
+                        {searchResults.map((result, index) => (
+                          <button
+                            key={`${result.type}-${result.id}`}
+                            onClick={() => {
+                              navigate(result.path);
+                              setSearchQuery("");
+                              setShowSearchResults(false);
+                            }}
+                            className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={cn(
+                                  "w-8 h-8 rounded-lg flex items-center justify-center",
+                                  result.type === "board"
+                                    ? "bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
+                                    : "bg-secondary-100 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400"
+                                )}
+                              >
+                                {result.type === "board" ? (
+                                  <LayoutDashboard size={16} />
+                                ) : (
+                                  <CheckSquare size={16} />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                  {result.title}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  {result.type === "board"
+                                    ? result.description || "Board"
+                                    : `${result.boardTitle} • ${result.listTitle}`}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+                        No results found for "{searchQuery}"
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -274,7 +449,28 @@ export default function DashboardLayout() {
                   Quick Actions
                 </h3>
                 <div className="space-y-1">
-                  {quickActions.map((action, index) => (
+                  {[
+                    {
+                      label: "New Board",
+                      icon: <Plus size={16} />,
+                      action: "create-board",
+                    },
+                    {
+                      label: "New Task",
+                      icon: <CheckSquare size={16} />,
+                      action: "create-task",
+                    },
+                    {
+                      label: "AI Generate",
+                      icon: <Zap size={16} />,
+                      action: "ai-generate",
+                    },
+                    {
+                      label: "Calendar",
+                      icon: <Calendar size={16} />,
+                      action: "calendar",
+                    },
+                  ].map((action, index) => (
                     <button
                       key={index}
                       onClick={() => handleQuickAction(action.action)}
@@ -315,25 +511,51 @@ export default function DashboardLayout() {
               </div>
 
               {isSidebarOpen && (
-                <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
-                  <h3 className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium mb-3">
-                    Workspace
-                  </h3>
-                  <div className="space-y-1">
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                      <Users size={16} />
-                      Team Members
-                    </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                      <Bookmark size={16} />
-                      Bookmarks
-                    </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                      <Archive size={16} />
-                      Archive
-                    </button>
+                <>
+                  <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h3 className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium mb-3">
+                      Recent Boards
+                    </h3>
+                    <div className="space-y-1">
+                      {recentBoards.length > 0 ? (
+                        recentBoards.map((board) => (
+                          <button
+                            key={board.id}
+                            onClick={() => navigate(`/boards/${board.id}`)}
+                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-left"
+                          >
+                            <Target size={16} />
+                            <span className="truncate">{board.title}</span>
+                          </button>
+                        ))
+                      ) : (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 px-3 py-2">
+                          No recent boards
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
+
+                  <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h3 className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium mb-3">
+                      Workspace
+                    </h3>
+                    <div className="space-y-1">
+                      <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <Users size={16} />
+                        Team Members
+                      </button>
+                      <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <Bookmark size={16} />
+                        Bookmarks
+                      </button>
+                      <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <Archive size={16} />
+                        Archive
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
             </nav>
 
@@ -421,8 +643,10 @@ export default function DashboardLayout() {
                       title="Notifications"
                     >
                       <Bell size={16} />
-                      {notifications.some((n) => n.unread) && (
-                        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                          {unreadCount}
+                        </span>
                       )}
                     </button>
                     <button
@@ -454,8 +678,10 @@ export default function DashboardLayout() {
                       title="Notifications"
                     >
                       <Bell size={16} />
-                      {notifications.some((n) => n.unread) && (
-                        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                          {unreadCount}
+                        </span>
                       )}
                     </button>
                     <button
@@ -481,6 +707,14 @@ export default function DashboardLayout() {
         />
       )}
 
+      {/* Search Results Overlay */}
+      {showSearchResults && (
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+          onClick={() => setShowSearchResults(false)}
+        />
+      )}
+
       {/* Notifications Panel */}
       <AnimatePresence>
         {showNotifications && (
@@ -495,12 +729,22 @@ export default function DashboardLayout() {
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Notifications
                 </h2>
-                <button
-                  onClick={() => setShowNotifications(false)}
-                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <X size={20} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllNotificationsAsRead}
+                      className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowNotifications(false)}
+                    className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
             </div>
             <div className="p-4">
@@ -515,6 +759,7 @@ export default function DashboardLayout() {
                           ? "bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800"
                           : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
                       )}
+                      onClick={() => markNotificationAsRead(notification.id)}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -570,6 +815,7 @@ export default function DashboardLayout() {
       <button
         className="fixed bottom-6 right-6 w-12 h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors z-30"
         title="Help & Support"
+        onClick={() => toast.info("Help & Support coming soon!")}
       >
         <HelpCircle size={24} />
       </button>
