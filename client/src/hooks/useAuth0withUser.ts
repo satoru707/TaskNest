@@ -9,9 +9,11 @@ export const useAuth0WithUser = () => {
     if (!isAuthenticated) return null;
 
     try {
+      console.log("User", user);
+
       // Check if user exists
       const { data: existingUser } = await axios.get(
-        `${import.meta.env.VITE_API_URL}/users/${user?.sub}`
+        `${import.meta.env.VITE_API_URL}/auth/users/${user?.sub}`
       );
       console.log("Existing user:", existingUser);
 
