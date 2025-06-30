@@ -4,11 +4,9 @@ import { motion } from "framer-motion";
 import {
   Plus,
   Search,
-  Filter,
   Clock,
   Users,
   BarChart2,
-  Calendar,
   CheckSquare,
   Sparkles,
   TrendingUp,
@@ -16,9 +14,6 @@ import {
   ArrowRight,
   Activity,
   Target,
-  Zap,
-  Award,
-  Eye,
   Lock,
   Globe,
 } from "lucide-react";

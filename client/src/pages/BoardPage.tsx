@@ -15,17 +15,13 @@ import {
   sortableKeyboardCoordinates,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { motion } from "framer-motion";
 import {
   MoreHorizontal,
   Plus,
-  MessageSquare,
-  Paperclip,
   UserPlus,
   Search,
   Lock,
   Users,
-  Calendar,
   Brain,
   Sparkles,
 } from "lucide-react";
@@ -42,7 +38,6 @@ import { boardsAPI, tasksAPI } from "../lib/api";
 import { useSocket } from "../hooks/useSocket";
 import { useBoardStore } from "../stores/useBoardStore";
 import { toast } from "sonner";
-import { cn } from "../utils/cn";
 
 export default function BoardPage() {
   const { boardId } = useParams();

@@ -9,25 +9,25 @@ import {
   CardFooter,
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import { Mail, Lock } from "lucide-react";
-import axios from "axios";
+import { Mail, Lock, LucideLoader2 } from "lucide-react";
+import { authAPI } from "../lib/api";
 
 export default function LoginPage() {
   const { loginWithRedirect, isAuthenticated } = useAuth0();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
+    setLoading(true);
     e.preventDefault();
+    const user = {
+      email,
+      password,
+    };
     try {
-      const response: any = await axios.post(
-        `http://localhost:3000/api/auth/login`,
-        {
-          email,
-          password,
-        }
-      );
+      const response: any = await authAPI.loginUser(user);
       if (response.success) {
         loginWithRedirect({
           authorizationParams: {
@@ -37,15 +37,14 @@ export default function LoginPage() {
           },
         });
       } else {
-        if (response.error) {
-          setError(response.error);
-        } else {
-          setError("Error logging in.");
-        }
+        console.log(response);
+
+        setError(response.data.error || "Error logging in");
       }
     } catch (error) {
       console.log(error);
     }
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -186,9 +185,21 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <Button type="submit" fullWidth>
-                Sign in
-              </Button>
+              {loading ? (
+                <Button fullWidth>
+                  <span className="align-right">
+                    {" "}
+                    <LucideLoader2
+                      size="sm"
+                      className="mx-auto h-5 animate-spin"
+                    />{" "}
+                  </span>
+                </Button>
+              ) : (
+                <Button type="submit" fullWidth>
+                  Sign in
+                </Button>
+              )}
             </div>
 
             <div className="relative mt-6">

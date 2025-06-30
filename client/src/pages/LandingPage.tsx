@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  CheckCircle2,
   Moon,
   Sun,
   ArrowRight,
@@ -440,11 +439,9 @@ export default function LandingPage() {
           </motion.div>
         </div>
 
-        {/* Background decorations */}
         <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-br from-primary-50/50 to-secondary-50/50 dark:from-primary-950/20 dark:to-secondary-950/20 -z-10"></div>
       </section>
 
-      {/* Features section */}
       <section
         id="features"
         className="py-20 lg:py-24 bg-gray-50 dark:bg-gray-900/50"
@@ -558,7 +555,7 @@ export default function LandingPage() {
                   size="lg"
                   className="bg-white text-primary-600 hover:bg-gray-50 text-lg px-8 py-4"
                 >
-                  Start Free Trial
+                  Start for free
                 </Button>
               </Link>
               <Button
@@ -632,7 +629,7 @@ export default function LandingPage() {
               </p>
               <div className="flex space-x-4">
                 <a
-                  href="#"
+                  href="https://x.com/xlyla277615?t=NSmxrCmUNOzTQZfYv8N1vg&s=09"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   <svg
@@ -673,7 +670,7 @@ export default function LandingPage() {
                 </a>
               </div>
             </div>
-            <div>
+            {/* <div>
               <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">
                 Product
               </h3>
@@ -711,8 +708,8 @@ export default function LandingPage() {
                   </a>
                 </li>
               </ul>
-            </div>
-            <div>
+            </div> */}
+            {/* <div>
               <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">
                 Company
               </h3>
@@ -750,13 +747,13 @@ export default function LandingPage() {
                   </a>
                 </li>
               </ul>
-            </div>
+            </div> */}
           </div>
           <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400">
               &copy; {new Date().getFullYear()} TaskNest. All rights reserved.
             </p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
+            {/* <div className="flex space-x-6 mt-4 md:mt-0">
               <a
                 href="#"
                 className="text-gray-400 hover:text-white transition-colors"
@@ -775,7 +772,7 @@ export default function LandingPage() {
               >
                 Cookies
               </a>
-            </div>
+            </div> */}
           </div>
         </div>
       </footer>

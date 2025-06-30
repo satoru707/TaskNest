@@ -10,9 +10,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 import {
   Card,
@@ -22,16 +19,13 @@ import {
 } from "../components/ui/Card";
 import {
   BarChart3,
-  Calendar,
   PieChart as PieChartIcon,
   TrendingUp,
   Users,
-  Filter,
   Download,
   RefreshCw,
   Activity,
   Target,
-  Award,
   Clock,
 } from "lucide-react";
 import Button from "../components/ui/Button";
@@ -67,7 +61,7 @@ export default function AnalyticsPage() {
         response.data.recentActivities.length > 0;
 
       setHasData(hasAnyData);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading analytics:", error);
       setHasData(false);
       setAnalytics(null);

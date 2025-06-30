@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { X, Plus, Calendar, User, Tag, Flag } from "lucide-react";
+import { X, Plus, Calendar, Flag } from "lucide-react";
 import Button from "../ui/Button";
 import { tasksAPI } from "../../lib/api";
 import { toast } from "sonner";

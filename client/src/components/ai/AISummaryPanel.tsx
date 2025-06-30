@@ -1,9 +1,15 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Brain, TrendingUp, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
-import Button from '../ui/Button';
-import { aiAPI } from '../../lib/api';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  Brain,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+} from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/Card";
+import Button from "../ui/Button";
+import { aiAPI } from "../../lib/api";
 
 interface AISummaryPanelProps {
   board: any;
@@ -11,7 +17,11 @@ interface AISummaryPanelProps {
   onClose: () => void;
 }
 
-export default function AISummaryPanel({ board, isVisible, onClose }: AISummaryPanelProps) {
+export default function AISummaryPanel({
+  board,
+  isVisible,
+  onClose,
+}: AISummaryPanelProps) {
   const [summary, setSummary] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,7 +36,7 @@ export default function AISummaryPanel({ board, isVisible, onClose }: AISummaryP
 
     setIsLoading(true);
     try {
-      const tasks = board.lists.flatMap((list: any) => 
+      const tasks = board.lists.flatMap((list: any) =>
         list.tasks.map((task: any) => ({
           title: task.title,
           description: task.description,
@@ -42,7 +52,7 @@ export default function AISummaryPanel({ board, isVisible, onClose }: AISummaryP
 
       setSummary(response.data);
     } catch (error) {
-      console.error('Error generating summary:', error);
+      console.error("Error generating summary:", error);
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +71,9 @@ export default function AISummaryPanel({ board, isVisible, onClose }: AISummaryP
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Brain className="text-purple-600" size={24} />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">AI Insights</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              AI Insights
+            </h2>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
             ×
@@ -85,13 +97,15 @@ export default function AISummaryPanel({ board, isVisible, onClose }: AISummaryP
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Completion Rate</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      Completion Rate
+                    </span>
                     <span className="font-semibold text-gray-900 dark:text-white">
                       {summary.progress.percentage}%
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-green-500 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${summary.progress.percentage}%` }}
                     />
@@ -110,7 +124,9 @@ export default function AISummaryPanel({ board, isVisible, onClose }: AISummaryP
                 <CardTitle className="text-base">Project Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600 dark:text-gray-300">{summary.summary}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {summary.summary}
+                </p>
               </CardContent>
             </Card>
 
@@ -126,9 +142,17 @@ export default function AISummaryPanel({ board, isVisible, onClose }: AISummaryP
                 <CardContent>
                   <ul className="space-y-2">
                     {summary.insights.map((insight: string, index: number) => (
-                      <li key={index} className="flex items-start gap-2 text-sm">
-                        <CheckCircle2 size={16} className="text-blue-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-600 dark:text-gray-300">{insight}</span>
+                      <li
+                        key={index}
+                        className="flex items-start gap-2 text-sm"
+                      >
+                        <CheckCircle2
+                          size={16}
+                          className="text-blue-500 mt-0.5 flex-shrink-0"
+                        />
+                        <span className="text-gray-600 dark:text-gray-300">
+                          {insight}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -147,12 +171,19 @@ export default function AISummaryPanel({ board, isVisible, onClose }: AISummaryP
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {summary.recommendations.map((recommendation: string, index: number) => (
-                      <li key={index} className="flex items-start gap-2 text-sm">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0" />
-                        <span className="text-gray-600 dark:text-gray-300">{recommendation}</span>
-                      </li>
-                    ))}
+                    {summary.recommendations.map(
+                      (recommendation: string, index: number) => (
+                        <li
+                          key={index}
+                          className="flex items-start gap-2 text-sm"
+                        >
+                          <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0" />
+                          <span className="text-gray-600 dark:text-gray-300">
+                            {recommendation}
+                          </span>
+                        </li>
+                      )
+                    )}
                   </ul>
                 </CardContent>
               </Card>
@@ -171,7 +202,9 @@ export default function AISummaryPanel({ board, isVisible, onClose }: AISummaryP
         ) : (
           <div className="text-center py-12">
             <Brain className="mx-auto text-gray-400 mb-4" size={48} />
-            <p className="text-gray-500 dark:text-gray-400">No insights available</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              No insights available
+            </p>
             <Button
               onClick={generateSummary}
               variant="outline"

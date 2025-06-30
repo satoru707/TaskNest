@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { X, Plus, Search, UserPlus } from "lucide-react";
+import { X, Search, UserPlus } from "lucide-react";
 import Button from "../ui/Button";
 import { boardsAPI } from "../../lib/api";
 import { toast } from "sonner";

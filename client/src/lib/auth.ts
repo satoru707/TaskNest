@@ -11,7 +11,7 @@ export const useAuthSync = () => {
     const syncUser = async () => {
       if (isAuthenticated && user) {
         setUser(user);
-        console.log("User", user);
+        // console.log("User", user);
 
         setLoading(true);
 

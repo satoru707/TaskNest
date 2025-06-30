@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Loader2, Plus, X } from "lucide-react";
+import { Sparkles, Plus, X } from "lucide-react";
 import Button from "../ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/Card";
 import { aiAPI } from "../../lib/api";

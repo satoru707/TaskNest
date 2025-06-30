@@ -80,11 +80,10 @@ export default function RegisterPage() {
           },
         });
       } else {
-        if (response.error == "User exists!") {
+        if (response.data.error == "User exists!") {
           setError("User already exists!");
         }
       }
-
       //I have the user now
       // Store tokens securely (consider httpOnly cookies for production)
     } catch (error) {

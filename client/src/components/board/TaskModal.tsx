@@ -2,22 +2,16 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   X,
-  Calendar,
-  User,
-  Tag,
   Paperclip,
   MessageSquare,
-  CheckSquare,
   Plus,
   Trash2,
   Edit2,
   Save,
-  Clock,
-  Flag,
 } from "lucide-react";
 import { format } from "date-fns";
 import Button from "../ui/Button";
-import { Card, CardContent } from "../ui/Card";
+// import { Card, CardContent } from "../ui/Card";
 import { tasksAPI, uploadsAPI } from "../../lib/api";
 import { toast } from "sonner";
 import { cn } from "../../utils/cn";

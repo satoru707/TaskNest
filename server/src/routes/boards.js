@@ -144,28 +144,24 @@ const boardRoutes = async (fastify) => {
 
     try {
       const { title, description, ownerId, isPublic } = request.body;
-      // console.log(title, ownerId);
-      // console.log("route");
+      console.log(title, ownerId, description);
+      console.log("route");
 
       const userExists = await prisma.user.findUnique({
-        where: { auth0Id: ownerId }, // or auth0Id if you use that
+        where: { id: ownerId }, // or auth0Id if you use that
       });
+      console.log("UserExists", userExists);
 
+      // error is here
       const board = await prisma.board.create({
         data: {
           title,
           description,
-          ownerId: userExists.id,
-          isPublic: isPublic || false,
+          ownerId: userExists.id, // Validate userExists.id exists
+          isPublic: isPublic ?? false, // More explicit nullish coalescing
         },
         include: {
-          owner: true,
-          members: {
-            include: {
-              user: true,
-            },
-          },
-          lists: true,
+          owner: true, // Only include frequently used relations
         },
       });
       console.log(board, "8hhy8h8yh8yh8yh");

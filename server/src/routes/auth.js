@@ -20,13 +20,27 @@ const authRoutes = async (fastify) => {
       if (!email || !password) {
         return res.code(400).send({ error: "Email and password are required" });
       }
+      console.log(email, password);
+
       const existingUser = await prisma.user.findUnique({
         where: { email },
-        select: { auth0Id: true, name: true, password: true },
+        // select: { auth0Id: true, name: true, password: true },
       });
+      console.log("Existing user", existingUser);
+
       if (!existingUser) {
         console.log("User does not exiss");
-        return res.send({ error: "User doesn't exists!" });
+        return res.send({
+          error: "User doesn't exists!",
+          success: !existingUser,
+        });
+      }
+
+      if (!existingUser.password && existingUser) {
+        return res.send({
+          error: "This user already has an account",
+          success: !existingUser,
+        });
       }
 
       if (password !== existingUser.password) {
@@ -62,7 +76,6 @@ const authRoutes = async (fastify) => {
       }
       const existingUser = await prisma.user.findUnique({
         where: { email: email },
-        select: { auth0Id: true, name: true },
       });
       console.log("Existing user", existingUser);
 
