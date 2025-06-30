@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth0WithUser as useAuth0 } from "../hooks/useAuth0withUser";
+import CreateBoardModal from "../components/board/CreateBoardModal";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -54,6 +55,7 @@ export default function DashboardLayout() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isCreateBoardModalOpen, setIsCreateBoardModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -183,11 +185,16 @@ export default function DashboardLayout() {
     }
   };
 
+  const handleBoardCreated = (board: any) => {
+    setBoards([board, ...boards]);
+    navigate(`/boards/${board.id}`);
+    toast.success("Board created successfully");
+  };
   const handleQuickAction = (action: string) => {
     switch (action) {
       case "create-board":
         navigate("/dashboard");
-        // Trigger create board modal (would need to be implemented in Dashboard)
+        setIsCreateBoardModalOpen(true);
         break;
       case "create-task":
         if (recentBoards.length > 0) {
@@ -818,6 +825,12 @@ export default function DashboardLayout() {
       >
         <HelpCircle size={24} />
       </button>
+
+      <CreateBoardModal
+        isOpen={isCreateBoardModalOpen}
+        onClose={() => setIsCreateBoardModalOpen(false)}
+        onBoardCreated={handleBoardCreated}
+      />
     </div>
   );
 }

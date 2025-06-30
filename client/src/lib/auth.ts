@@ -16,7 +16,6 @@ export const useAuthSync = () => {
         setLoading(true);
 
         try {
-          // Create or update user in database
           const response = await authAPI.createOrUpdateProfile({
             auth0Id: user.sub,
             email: user.email,

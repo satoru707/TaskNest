@@ -1,15 +1,5 @@
 import "dotenv/config";
 import axios from "axios";
-import { WebAuth } from "auth0-js";
-
-//it has redirect url so I don't have to do anything on the front end
-const webAuth = new WebAuth({
-  domain: process.env.AUTH0_DOMAIN,
-  clientID: process.env.AUTH0_CLIENT_ID,
-  redirectUri: `${process.env.SOCKET_CORS_ORIGIN}/dashboard`,
-  responseType: "token id_token",
-  scope: "openid profile email",
-});
 
 const authRoutes = async (fastify) => {
   const prisma = fastify.prisma;
@@ -153,6 +143,7 @@ const authRoutes = async (fastify) => {
           where: { auth0Id },
           data: {
             email,
+            auth0Id,
             name,
             avatar,
           },
