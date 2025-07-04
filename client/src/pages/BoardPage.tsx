@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   DndContext,
   DragOverlay,
@@ -15,15 +15,22 @@ import {
   sortableKeyboardCoordinates,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { motion } from "framer-motion";
 import {
   MoreHorizontal,
   Plus,
+  MessageSquare,
+  Paperclip,
   UserPlus,
   Search,
   Lock,
   Users,
+  Calendar,
   Brain,
   Sparkles,
+  Trash2,
+  Edit2,
+  Settings,
 } from "lucide-react";
 import Button from "../components/ui/Button";
 import KanbanList from "../components/board/KanbanList";
@@ -38,9 +45,11 @@ import { boardsAPI, tasksAPI } from "../lib/api";
 import { useSocket } from "../hooks/useSocket";
 import { useBoardStore } from "../stores/useBoardStore";
 import { toast } from "sonner";
+import { cn } from "../utils/cn";
 
 export default function BoardPage() {
   const { boardId } = useParams();
+  const navigate = useNavigate();
   const { currentBoard, setCurrentBoard, setLoading } = useBoardStore();
   const [activeId, setActiveId] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -52,6 +61,7 @@ export default function BoardPage() {
   const [isAISummaryOpen, setIsAISummaryOpen] = useState(false);
   const [selectedListId, setSelectedListId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showBoardMenu, setShowBoardMenu] = useState(false);
 
   // Initialize socket connection for this board
   useSocket(boardId);
@@ -191,6 +201,48 @@ export default function BoardPage() {
 
   const handleMemberAdded = (member: any) => {
     loadBoard(); // Reload to get updated data
+  };
+
+  const handleDeleteList = async (listId: string) => {
+    try {
+      await boardsAPI.deleteList(boardId!, listId);
+      loadBoard();
+      toast.success("List deleted successfully");
+    } catch (error) {
+      console.error("Error deleting list:", error);
+      toast.error("Failed to delete list");
+    }
+  };
+
+  const handleEditList = async (listId: string, title: string) => {
+    try {
+      await boardsAPI.updateList(boardId!, listId, { title });
+      loadBoard();
+      toast.success("List updated successfully");
+    } catch (error) {
+      console.error("Error updating list:", error);
+      toast.error("Failed to update list");
+    }
+  };
+
+  const handleDeleteBoard = async () => {
+    if (!currentBoard) return;
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${currentBoard.title}"? This action cannot be undone and will delete all lists and tasks.`
+    );
+
+    if (confirmDelete) {
+      try {
+        await boardsAPI.deleteBoard(boardId!);
+        navigate("/dashboard");
+        toast.success("Board deleted successfully");
+      } catch (error) {
+        console.error("Error deleting board:", error);
+        toast.error("Failed to delete board");
+      }
+    }
+    setShowBoardMenu(false);
   };
 
   const handleAITasksGenerated = async (tasks: any[]) => {
@@ -348,13 +400,49 @@ export default function BoardPage() {
               </button>
             </div>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-600 dark:text-gray-300"
-            >
-              <MoreHorizontal size={18} />
-            </Button>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowBoardMenu(!showBoardMenu)}
+                className="text-gray-600 dark:text-gray-300"
+              >
+                <MoreHorizontal size={18} />
+              </Button>
+
+              {showBoardMenu && (
+                <div className="absolute right-0 top-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px]">
+                  <button
+                    onClick={() => {
+                      // Edit board functionality
+                      setShowBoardMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <Edit2 size={14} />
+                    Edit Board
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Board settings functionality
+                      setShowBoardMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <Settings size={14} />
+                    Board Settings
+                  </button>
+                  <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                  <button
+                    onClick={handleDeleteBoard}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                  >
+                    <Trash2 size={14} />
+                    Delete Board
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -380,6 +468,8 @@ export default function BoardPage() {
                   tasks={list.tasks}
                   onTaskClick={handleTaskClick}
                   onCreateTask={() => handleCreateTask(list.id)}
+                  onDeleteList={handleDeleteList}
+                  onEditList={handleEditList}
                 />
               ))}
             </SortableContext>
@@ -407,6 +497,14 @@ export default function BoardPage() {
           </DragOverlay>
         </DndContext>
       </div>
+
+      {/* Click outside to close board menu */}
+      {showBoardMenu && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowBoardMenu(false)}
+        />
+      )}
 
       {/* Modals */}
       <TaskModal

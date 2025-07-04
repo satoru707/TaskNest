@@ -31,6 +31,7 @@ import { useBoardStore } from "../stores/useBoardStore";
 import { useCurrentUser } from "../lib/auth";
 import { toast } from "sonner";
 import { cn } from "../utils/cn";
+import { useAuth0WithUser as useAuth0 } from "../hooks/useAuth0withUser";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -44,6 +45,7 @@ export default function Dashboard() {
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const { user } = useAuth0();
 
   useEffect(() => {
     loadDashboardData();
@@ -82,6 +84,7 @@ export default function Dashboard() {
       setIsLoading(false);
     }
   };
+  /*******  c1a58f4f-d09d-4dd5-9f09-e9d70e928f92  *******/
 
   const handleBoardCreated = (board: any) => {
     setBoards([board, ...boards]);

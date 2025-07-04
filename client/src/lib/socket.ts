@@ -8,23 +8,34 @@ class SocketManager {
     if (this.socket?.connected) return this.socket;
 
     const SOCKET_URL =
-      import.meta.env.VITE_SOCKET_URL || "http://localhost:3000";
+      import.meta.env.VITE_SOCKET_URL || "http://localhost:3000/socket.io";
 
     this.socket = io(SOCKET_URL, {
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     this.socket.on("connect", () => {
-      console.log("Connected to server");
+      console.log("✅ Connected to server:", this.socket?.id);
     });
 
-    this.socket.on("disconnect", () => {
-      console.log("Disconnected from server");
+    this.socket.on("disconnect", (reason) => {
+      console.log("❌ Disconnected from server:", reason);
     });
 
     this.socket.on("connect_error", (error) => {
-      console.error("Connection error:", error);
+      console.error("🔥 Connection error:", error);
+    });
+
+    this.socket.on("reconnect", (attemptNumber) => {
+      console.log("🔄 Reconnected after", attemptNumber, "attempts");
+      // Rejoin board if we were in one
+      if (this.currentBoardId) {
+        this.joinBoard(this.currentBoardId);
+      }
     });
 
     return this.socket;
@@ -47,10 +58,12 @@ class SocketManager {
 
     this.currentBoardId = boardId;
     this.socket?.emit("join-board", boardId);
+    console.log("📋 Joined board:", boardId);
   }
 
   leaveBoard(boardId: string) {
     this.socket?.emit("leave-board", boardId);
+    console.log("🚪 Left board:", boardId);
     if (this.currentBoardId === boardId) {
       this.currentBoardId = null;
     }
@@ -92,6 +105,10 @@ class SocketManager {
 
   onListDeleted(callback: (data: any) => void) {
     this.socket?.on("list-deleted", callback);
+  }
+
+  onBoardDeleted(callback: (data: any) => void) {
+    this.socket?.on("board-deleted", callback);
   }
 
   onCommentAdded(callback: (data: any) => void) {

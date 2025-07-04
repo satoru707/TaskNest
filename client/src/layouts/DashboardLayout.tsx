@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useAuth0WithUser as useAuth0 } from "../hooks/useAuth0withUser";
-import CreateBoardModal from "../components/board/CreateBoardModal";
+import { useAuth0 } from "@auth0/auth0-react";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -23,6 +22,7 @@ import {
   Archive,
   Zap,
   Target,
+  Activity,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useCurrentUser } from "../lib/auth";
@@ -43,6 +43,12 @@ const navItems = [
   { path: "/settings", label: "Settings", icon: <Settings size={20} /> },
 ];
 
+const workspaceItems = [
+  { path: "/team-members", label: "Team Members", icon: <Users size={16} /> },
+  { path: "/bookmarks", label: "Bookmarks", icon: <Bookmark size={16} /> },
+  { path: "/archive", label: "Archive", icon: <Archive size={16} /> },
+];
+
 export default function DashboardLayout() {
   const { logout } = useAuth0();
   const { user, dbUser } = useCurrentUser();
@@ -55,7 +61,6 @@ export default function DashboardLayout() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [isCreateBoardModalOpen, setIsCreateBoardModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -185,16 +190,11 @@ export default function DashboardLayout() {
     }
   };
 
-  const handleBoardCreated = (board: any) => {
-    setBoards([board, ...boards]);
-    navigate(`/boards/${board.id}`);
-    toast.success("Board created successfully");
-  };
   const handleQuickAction = (action: string) => {
     switch (action) {
       case "create-board":
         navigate("/dashboard");
-        setIsCreateBoardModalOpen(true);
+        // Trigger create board modal (would need to be implemented in Dashboard)
         break;
       case "create-task":
         if (recentBoards.length > 0) {
@@ -547,18 +547,23 @@ export default function DashboardLayout() {
                       Workspace
                     </h3>
                     <div className="space-y-1">
-                      <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                        <Users size={16} />
-                        Team Members
-                      </button>
-                      <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                        <Bookmark size={16} />
-                        Bookmarks
-                      </button>
-                      <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                        <Archive size={16} />
-                        Archive
-                      </button>
+                      {workspaceItems.map((item) => (
+                        <NavLink
+                          key={item.path}
+                          to={item.path}
+                          className={({ isActive }) =>
+                            cn(
+                              "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
+                              isActive
+                                ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
+                                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            )
+                          }
+                        >
+                          {item.icon}
+                          {item.label}
+                        </NavLink>
+                      ))}
                     </div>
                   </div>
                 </>
@@ -825,12 +830,6 @@ export default function DashboardLayout() {
       >
         <HelpCircle size={24} />
       </button>
-
-      <CreateBoardModal
-        isOpen={isCreateBoardModalOpen}
-        onClose={() => setIsCreateBoardModalOpen(false)}
-        onBoardCreated={handleBoardCreated}
-      />
     </div>
   );
 }

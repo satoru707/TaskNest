@@ -319,14 +319,14 @@ export default function LandingPage() {
                   Start Free Trial
                 </Button>
               </Link>
-              <Button
+              {/* <Button
                 variant="outline"
                 size="lg"
                 className="text-lg px-8 py-4"
                 icon={<Play size={20} />}
               >
                 Watch Demo
-              </Button>
+              </Button> */}
             </motion.div>
 
             {/* Stats */}

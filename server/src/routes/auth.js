@@ -140,7 +140,7 @@ const authRoutes = async (fastify) => {
       } else {
         // Update user info if it has changed
         user = await prisma.user.update({
-          where: { auth0Id },
+          where: { email },
           data: {
             email,
             auth0Id,

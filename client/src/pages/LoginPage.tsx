@@ -13,7 +13,7 @@ import { Mail, Lock, LucideLoader2 } from "lucide-react";
 import { authAPI } from "../lib/api";
 
 export default function LoginPage() {
-  const { loginWithRedirect, isAuthenticated } = useAuth0();
+  const { loginWithRedirect, isAuthenticated, user } = useAuth0();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

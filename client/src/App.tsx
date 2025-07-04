@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth0WithUser as useAuth0 } from "./hooks/useAuth0withUser";
+import { useAuth0 } from "@auth0/auth0-react";
+
 // Layouts
 import DashboardLayout from "./layouts/DashboardLayout";
 import AuthLayout from "./layouts/AuthLayout";
@@ -14,6 +15,9 @@ import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import TeamMembersPage from "./pages/TeamMembersPage";
+import BookmarksPage from "./pages/BookmarksPage";
+import ArchivePage from "./pages/ArchivePage";
 
 // Components
 import LoadingScreen from "./components/common/LoadingScreen";
@@ -66,6 +70,9 @@ function App() {
         <Route path="/boards/:boardId" element={<BoardPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/team-members" element={<TeamMembersPage />} />
+        <Route path="/bookmarks" element={<BookmarksPage />} />
+        <Route path="/archive" element={<ArchivePage />} />
       </Route>
 
       {/* Redirect authenticated users from auth pages */}
