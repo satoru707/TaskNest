@@ -29,10 +29,13 @@ export default function CreateListModal({
 
     setIsSubmitting(true);
     try {
+      console.log("Creating list with title:", title, boardId);
+
       const response = await boardsAPI.createList(boardId, {
         title: title.trim(),
         position: 0, // Will be calculated on backend
       });
+      console.log(response);
 
       onListCreated(response.data.list);
       onClose();

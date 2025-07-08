@@ -277,6 +277,9 @@ const boardRoutes = async (fastify) => {
     try {
       const { boardId } = request.params;
       const { title, position } = request.body;
+      console.log(
+        `Creating list for board ${boardId} with title: ${title}\nPosition: ${position}`
+      );
       const list = await prisma.list.create({
         data: {
           title,
@@ -287,8 +290,9 @@ const boardRoutes = async (fastify) => {
           tasks: true,
         },
       });
+      console.log("Done with creating", list);
 
-      // Emit real-time update
+      //Continue froom here
       io.to(`board-${boardId}`).emit("list-created", { list });
 
       return { list };

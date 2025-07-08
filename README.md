@@ -68,7 +68,7 @@ AUTH0_CLIENT_SECRET="your-auth0-client-secret"
 GEMINI_API_KEY="your-gemini-api-key"
 
 # Server Configuration
-PORT=3001
+PORT=3000
 NODE_ENV="development"
 
 # File Upload
@@ -101,7 +101,7 @@ npm run dev
 The application will be available at:
 
 - Frontend: http://localhost:5173
-- Backend API: http://localhost:3001
+- Backend API: http://localhost:3000
 
 ## 🔐 Auth0 Configuration
 
@@ -281,7 +281,7 @@ AUTH0_CLIENT_SECRET="your-auth0-client-secret"
 GEMINI_API_KEY="your-gemini-api-key"
 
 # Server
-PORT=3001
+PORT=3000
 NODE_ENV="production"
 
 # CORS (update with your production domain)
