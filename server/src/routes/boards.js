@@ -70,6 +70,7 @@ const boardRoutes = async (fastify) => {
   fastify.get("/:boardId", async (request, reply) => {
     try {
       const { boardId } = request.params;
+      console.log(`Fetching board with ID: ${boardId}`);
 
       const board = await prisma.board.findUnique({
         where: { id: boardId },
@@ -130,6 +131,7 @@ const boardRoutes = async (fastify) => {
         reply.status(404).send({ error: "Board not found" });
         return;
       }
+      console.log("Board fetched successfully:", board);
 
       return { board };
     } catch (error) {
@@ -241,6 +243,32 @@ const boardRoutes = async (fastify) => {
     try {
       const { boardId } = request.params;
       const { userId, role } = request.body;
+      const existingMember = await prisma.boardMember.findUnique({
+        where: {
+          boardId_userId: {
+            boardId,
+            userId,
+          },
+        },
+      });
+
+      if (existingMember) {
+        reply
+          .status(409)
+          .send({ error: "User is already a member of this board" });
+        return;
+      }
+
+      // Check if user exists
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        reply.status(404).send({ error: "User not found" });
+        return;
+      }
+
       const member = await prisma.boardMember.create({
         data: {
           boardId,
@@ -252,7 +280,6 @@ const boardRoutes = async (fastify) => {
         },
       });
 
-      // Create activity
       await prisma.activity.create({
         data: {
           type: "MEMBER_ADDED",
@@ -262,13 +289,80 @@ const boardRoutes = async (fastify) => {
         },
       });
 
-      // Emit real-time update
       io.to(`board-${boardId}`).emit("member-added", { member });
 
       return { member };
     } catch (error) {
       fastify.log.error(error);
       reply.status(500).send({ error: "Failed to add member" });
+    }
+  });
+
+  fastify.put("/:boardId/members/:memberId", async (request, reply) => {
+    try {
+      const { boardId, memberId } = request.params;
+      const { role } = request.body;
+
+      const member = await prisma.boardMember.update({
+        where: { id: memberId },
+        data: { role },
+        include: { user: true },
+      });
+
+      // Create activity
+      await prisma.activity.create({
+        data: {
+          type: "MEMBER_UPDATED",
+          data: { memberName: member.user.name, newRole: role },
+          boardId,
+          userId: member.userId,
+        },
+      });
+
+      // Emit real-time update
+      io.to(`board-${boardId}`).emit("member-updated", { member });
+
+      return { member };
+    } catch (error) {
+      fastify.log.error(error);
+      reply.status(500).send({ error: "Failed to update member role" });
+    }
+  });
+
+  fastify.delete("/:boardId/members/:memberId", async (request, reply) => {
+    try {
+      const { boardId, memberId } = request.params;
+      const member = await prisma.boardMember.findUnique({
+        where: { id: memberId },
+        include: { user: true },
+      });
+
+      if (!member) {
+        reply.status(404).send({ error: "Member not found" });
+        return;
+      }
+
+      await prisma.boardMember.delete({
+        where: { id: memberId },
+      });
+
+      // Create activity
+      await prisma.activity.create({
+        data: {
+          type: "MEMBER_REMOVED",
+          data: { memberName: member.user.name },
+          boardId,
+          userId: member.userId,
+        },
+      });
+
+      // Emit real-time update
+      io.to(`board-${boardId}`).emit("member-removed", { memberId });
+
+      return { success: true };
+    } catch (error) {
+      fastify.log.error(error);
+      reply.status(500).send({ error: "Failed to remove member" });
     }
   });
 

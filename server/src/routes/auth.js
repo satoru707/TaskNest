@@ -117,15 +117,61 @@ const authRoutes = async (fastify) => {
     }
   });
 
-  // fastify.post("");
+  fastify.post("/checkEmail", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.code(400).send({ error: "Email is required" });
+      }
+
+      // Check if user exists
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+      console.log("Checking email:", email, "Existing user:", existingUser);
+
+      if (existingUser) {
+        return res.code(200).send({ exists: true, existingUser });
+      }
+
+      return res.code(404).send({ exists: false });
+    } catch (error) {
+      console.error("Error checking email:", error);
+      return res.code(500).send({ error: "Failed to check email" });
+    }
+  });
+
+  fastify.post("/updateID", async (req, res) => {
+    const { auth0Id, email } = req.body;
+    try {
+      if (!auth0Id || !email) {
+        return res.code(400).send({ error: "Auth0 ID and Email is required" });
+      }
+
+      //check for email and inset authId
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+      console.log("Existing user for update:", existingUser);
+      const newUser = await prisma.user.update({
+        where: { email },
+        data: { auth0Id },
+      });
+      return res.code(201).send({ user: newUser });
+    } catch (error) {
+      console.error("Error updating Auth0 ID:", error);
+      return res.code(500).send({ error: "Failed to update Auth0 ID" });
+    }
+  });
 
   // Get or create user from Auth0 profile
   fastify.post("/profile", async (request, reply) => {
     try {
       const { auth0Id, email, name, avatar } = request.body;
+      console.log("Profile data:", { auth0Id, email, name, avatar });
 
       let user = await prisma.user.findUnique({
-        where: { auth0Id },
+        where: { email },
       });
 
       if (!user) {
@@ -212,6 +258,100 @@ const authRoutes = async (fastify) => {
     } catch (error) {
       fastify.log.error(error);
       reply.status(500).send({ error: "Failed to update user profile" });
+    }
+  });
+
+  fastify.get("/search", async (request, reply) => {
+    try {
+      const { q } = request.query;
+
+      if (!q || q.length < 2) {
+        return { users: [] };
+      }
+
+      const users = await prisma.user.findMany({
+        where: {
+          OR: [
+            {
+              email: {
+                contains: q,
+                mode: "insensitive",
+              },
+            },
+            {
+              name: {
+                contains: q,
+                mode: "insensitive",
+              },
+            },
+          ],
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar: true,
+          role: true,
+        },
+        take: 10, // Limit results
+      });
+
+      return { users };
+    } catch (error) {
+      fastify.log.error(error);
+      reply.status(500).send({ error: "Failed to search users" });
+    }
+  });
+
+  // Get all users (for admin purposes)
+  fastify.get("/users", async (request, reply) => {
+    try {
+      const users = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar: true,
+          role: true,
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      return { users };
+    } catch (error) {
+      fastify.log.error(error);
+      reply.status(500).send({ error: "Failed to fetch users" });
+    }
+  });
+
+  // Get user by ID
+  fastify.get("/users/:userId", async (request, reply) => {
+    try {
+      const { userId } = request.params;
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar: true,
+          role: true,
+          createdAt: true,
+        },
+      });
+
+      if (!user) {
+        reply.status(404).send({ error: "User not found" });
+        return;
+      }
+
+      return { user };
+    } catch (error) {
+      fastify.log.error(error);
+      reply.status(500).send({ error: "Failed to fetch user" });
     }
   });
 };

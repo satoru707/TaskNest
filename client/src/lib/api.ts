@@ -17,12 +17,16 @@ export const authAPI = {
   registerUser: (user: any) => api.post("/auth/register", user),
 
   getProfile: (auth0Id: string) => api.get(`/auth/profile/${auth0Id}`),
+  updateProfile: (auth0Id: string, data: any) =>
+    api.put(`/auth/profile/${auth0Id}`, data),
+
+  searchUsers: (query: string) =>
+    api.get(`/auth/search?q=${encodeURIComponent(query)}`),
+
+  getAllUsers: () => api.get("/auth/users"),
 
   registerWithDetails: (email: string, password: string, name?: string) =>
     api.post("/auth/registerwithdetails", { email, password, name }),
-
-  updateProfile: (auth0Id: string, data: any) =>
-    api.put(`/auth/profile/${auth0Id}`, data),
 };
 
 // Boards API
@@ -41,6 +45,12 @@ export const boardsAPI = {
   addMember: (boardId: string, memberData: any) =>
     api.post(`/boards/${boardId}/members`, memberData),
 
+  removeMember: (boardId: string, memberId: string) =>
+    api.delete(`/boards/${boardId}/members/${memberId}`),
+
+  updateMemberRole: (boardId: string, memberId: string, role: string) =>
+    api.put(`/boards/${boardId}/members/${memberId}`, { role }),
+
   createList: (boardId: string, listData: any) =>
     api.post(`/boards/${boardId}/lists`, listData),
 
@@ -49,6 +59,15 @@ export const boardsAPI = {
 
   deleteList: (boardId: string, listId: string) =>
     api.delete(`/boards/${boardId}/lists/${listId}`),
+
+  createLabel: (boardId: string, labelData: any) =>
+    api.post(`/boards/${boardId}/labels`, labelData),
+
+  updateLabel: (boardId: string, labelId: string, data: any) =>
+    api.put(`/boards/${boardId}/labels/${labelId}`, data),
+
+  deleteLabel: (boardId: string, labelId: string) =>
+    api.delete(`/boards/${boardId}/labels/${labelId}`),
 };
 
 // Tasks API
@@ -70,6 +89,13 @@ export const tasksAPI = {
 
   deleteChecklistItem: (taskId: string, itemId: string) =>
     api.delete(`/tasks/${taskId}/checklist/${itemId}`),
+
+  moveTask: (taskId: string, data: any) =>
+    api.put(`/tasks/${taskId}/move`, data),
+
+  duplicateTask: (taskId: string) => api.post(`/tasks/${taskId}/duplicate`),
+
+  archiveTask: (taskId: string) => api.put(`/tasks/${taskId}/archive`),
 };
 
 // AI API
@@ -85,6 +111,12 @@ export const aiAPI = {
     taskDescription?: string;
     boardContext?: string;
   }) => api.post("/ai/suggest-improvements", data),
+
+  generateSubtasks: (data: { taskTitle: string; taskDescription?: string }) =>
+    api.post("/ai/generate-subtasks", data),
+
+  estimateTime: (data: { taskTitle: string; taskDescription?: string }) =>
+    api.post("/ai/estimate-time", data),
 };
 
 // Uploads API
@@ -105,6 +137,13 @@ export const uploadsAPI = {
         "Content-Type": "multipart/form-data",
       },
     }),
+
+  uploadBoardBackground: (boardId: string, formData: FormData) =>
+    api.post(`/uploads/board/${boardId}/background`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
 };
 
 // Analytics API
@@ -115,4 +154,9 @@ export const analyticsAPI = {
   getUserAnalytics: (userId: string) => api.get(`/analytics/users/${userId}`),
 
   getGlobalAnalytics: () => api.get("/analytics/global"),
+
+  getTeamAnalytics: (boardId: string) => api.get(`/analytics/teams/${boardId}`),
+
+  exportAnalytics: (type: string, params: any) =>
+    api.get(`/analytics/export/${type}`, { params }),
 };
