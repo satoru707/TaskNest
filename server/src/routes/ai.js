@@ -79,8 +79,7 @@ const aiRoutes = async (fastify) => {
   fastify.post("/summarize-tasks", async (request, reply) => {
     try {
       const { tasks, boardTitle } = request.body;
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const prompt = `
         You are a project management AI assistant. Please provide a comprehensive summary of the following project board.
 
@@ -168,7 +167,7 @@ const aiRoutes = async (fastify) => {
     try {
       const { taskTitle, taskDescription, boardContext } = request.body;
 
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const prompt = `
         You are a project management AI assistant. Please provide suggestions to improve the following task.

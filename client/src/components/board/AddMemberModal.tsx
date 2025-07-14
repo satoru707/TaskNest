@@ -44,8 +44,9 @@ export default function AddMemberModal({
   // Debounced search effect
   useEffect(() => {
     const searchUsers = async () => {
-      if (!searchQuery.trim() || searchQuery.length < 2) {
+      if (!searchQuery.trim() || (searchQuery.length < 2 && !selectedUser)) {
         setSearchResults([]);
+        // console.log("Clearing search results");
         setShowResults(false);
         return;
       }
@@ -83,12 +84,21 @@ export default function AddMemberModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Working");
+
     if (!selectedUser) {
       toast.error("Please select a user to add");
+      console.log("But I have a selcted user");
       return;
     }
 
     setIsSubmitting(true);
+    console.log("Adding member:", {
+      userId: selectedUser.id,
+      role,
+      boardId,
+    });
+
     try {
       const response = await boardsAPI.addMember(boardId, {
         userId: selectedUser.id,
@@ -208,6 +218,7 @@ export default function AddMemberModal({
                 placeholder="Search by name or email..."
                 required
                 autoFocus
+                disabled={!!selectedUser}
               />
               {isSearching && (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -225,7 +236,11 @@ export default function AddMemberModal({
                       <button
                         key={user.id}
                         type="button"
-                        onClick={() => handleUserSelect(user)}
+                        onClick={() => {
+                          handleUserSelect(user);
+                          // setShowResults(false);
+                          setSearchQuery("");
+                        }}
                         className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3"
                       >
                         <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center overflow-hidden">

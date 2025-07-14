@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Menu,
   X,
-  Play,
   Star,
   Users,
   Zap,

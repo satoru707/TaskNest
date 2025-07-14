@@ -13,7 +13,6 @@ model User {
   email     String   @unique
   name      String
   avatar    String?
-  bio       String?
   role      Role     @default(EDITOR)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -195,6 +195,7 @@ const authRoutes = async (fastify) => {
           },
         });
       }
+      console.log("User", user);
 
       return { user };
     } catch (error) {

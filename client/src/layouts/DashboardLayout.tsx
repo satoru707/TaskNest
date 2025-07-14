@@ -22,7 +22,6 @@ import {
   Archive,
   Zap,
   Target,
-  Activity,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useCurrentUser } from "../lib/auth";

@@ -7,7 +7,6 @@ import {
   Star,
   Calendar,
   Users,
-  MoreHorizontal,
   BookmarkX,
   ExternalLink,
 } from "lucide-react";

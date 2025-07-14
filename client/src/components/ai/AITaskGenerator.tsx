@@ -49,6 +49,8 @@ export default function AITaskGenerator({
   };
 
   const handleAddTasks = () => {
+    console.log("Generated tasks:", generatedTasks);
+    //supposed to add task to board
     onTasksGenerated(generatedTasks);
     setIsOpen(false);
     setDescription("");

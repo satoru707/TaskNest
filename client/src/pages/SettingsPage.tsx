@@ -18,9 +18,7 @@ import {
   LogOut,
   Camera,
   Save,
-  X,
   Check,
-  AlertTriangle,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useCurrentUser } from "../lib/auth";

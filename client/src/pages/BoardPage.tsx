@@ -37,6 +37,7 @@ import CreateListModal from "../components/board/CreateListModal";
 import AddMemberModal from "../components/board/AddMemberModal";
 import AITaskGenerator from "../components/ai/AITaskGenerator";
 import AISummaryPanel from "../components/ai/AISummaryPanel";
+import EditBoardModal from "../components/board/EditBoardModal";
 import { boardsAPI, tasksAPI } from "../lib/api";
 import { useSocket } from "../hooks/useSocket";
 import { useBoardStore } from "../stores/useBoardStore";
@@ -57,6 +58,7 @@ export default function BoardPage() {
   const [selectedListId, setSelectedListId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showBoardMenu, setShowBoardMenu] = useState(false);
+  const [showEditBoardModal, setShowEditBoardModal] = useState(false);
 
   // Initialize socket connection for this board
   useSocket(boardId);
@@ -218,26 +220,6 @@ export default function BoardPage() {
       console.error("Error updating list:", error);
       toast.error("Failed to update list");
     }
-  };
-
-  const handleDeleteBoard = async () => {
-    if (!currentBoard) return;
-
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete "${currentBoard.title}"? This action cannot be undone and will delete all lists and tasks.`
-    );
-
-    if (confirmDelete) {
-      try {
-        await boardsAPI.deleteBoard(boardId!);
-        navigate("/dashboard");
-        toast.success("Board deleted successfully");
-      } catch (error) {
-        console.error("Error deleting board:", error);
-        toast.error("Failed to delete board");
-      }
-    }
-    setShowBoardMenu(false);
   };
 
   const handleAITasksGenerated = async (tasks: any[]) => {
@@ -409,17 +391,8 @@ export default function BoardPage() {
                 <div className="absolute right-0 top-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px]">
                   <button
                     onClick={() => {
-                      // Edit board functionality
-                      setShowBoardMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                  >
-                    <Edit2 size={14} />
-                    Edit Board
-                  </button>
-                  <button
-                    onClick={() => {
                       // Board settings functionality
+                      setShowEditBoardModal(true);
                       setShowBoardMenu(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
@@ -428,13 +401,6 @@ export default function BoardPage() {
                     Board Settings
                   </button>
                   <div className="border-t border-gray-200 dark:border-gray-700"></div>
-                  <button
-                    onClick={handleDeleteBoard}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                  >
-                    <Trash2 size={14} />
-                    Delete Board
-                  </button>
                 </div>
               )}
             </div>
@@ -470,6 +436,7 @@ export default function BoardPage() {
             </SortableContext>
 
             {/* Add new list button */}
+            {/* the dots on the list,sort em out */}
             <div className="flex-shrink-0 w-72">
               <button
                 onClick={() => setIsCreateListModalOpen(true)}
@@ -543,6 +510,14 @@ export default function BoardPage() {
         board={currentBoard}
         isVisible={isAISummaryOpen}
         onClose={() => setIsAISummaryOpen(false)}
+      />
+
+      <EditBoardModal
+        isOpen={!!showEditBoardModal}
+        onClose={() => setShowEditBoardModal(false)}
+        board={currentBoard}
+        onBoardDeleted={() => navigate("/dashboard")}
+        onBoardUpdated={() => loadBoard()}
       />
 
       {isAIGeneratorOpen && (

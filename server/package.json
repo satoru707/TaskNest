@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "src/index.js",
   "scripts": {
-    "dev": "prisma generate && prisma migrate deploy && nodemon src/index.js",
-    "start": "prisma generate && prisma migrate deploy && node src/index.js",
+    "dev": "prisma generate && prisma migrate deploy && nodemon src/index.js | pino-pretty",
+    "start": "prisma generate && prisma migrate deploy && node src/index.js | pino-pretty",
     "postinstall": "prisma generate",
     "prisma": "prisma",
     "migrate": "prisma migrate dev",
@@ -33,6 +33,7 @@
     "@types/express": "^5.0.3",
     "@types/node": "^22.15.30",
     "nodemon": "^3.1.10",
+    "pino-pretty": "^13.0.0",
     "prisma": "^6.9.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",

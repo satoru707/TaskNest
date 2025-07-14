@@ -192,6 +192,8 @@ const boardRoutes = async (fastify) => {
     try {
       const { boardId } = request.params;
       const { title, description, isPublic } = request.body;
+      console.log("Board", boardId, title, description, isPublic);
+
       const board = await prisma.board.update({
         where: { id: boardId },
         data: {
@@ -210,7 +212,8 @@ const boardRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      io.to(`board-${boardId}`).emit("board-updated", { board });
+      // io.to(`board-${boardId}`).emit("board-updated", { board });
+      console.log("Board", board);
 
       return { board };
     } catch (error) {
@@ -229,7 +232,8 @@ const boardRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      io.to(`board-${boardId}`).emit("board-deleted", { boardId });
+      // io.to(`board-${boardId}`).emit("board-deleted", { boardId });
+      console.log("Deleted successfully");
 
       return { success: true };
     } catch (error) {
@@ -243,6 +247,8 @@ const boardRoutes = async (fastify) => {
     try {
       const { boardId } = request.params;
       const { userId, role } = request.body;
+      console.log(boardId, userId, role);
+
       const existingMember = await prisma.boardMember.findUnique({
         where: {
           boardId_userId: {
@@ -251,6 +257,7 @@ const boardRoutes = async (fastify) => {
           },
         },
       });
+      console.log("Check existing member", existingMember);
 
       if (existingMember) {
         reply
@@ -288,7 +295,7 @@ const boardRoutes = async (fastify) => {
           userId,
         },
       });
-
+      console.log("Member added:", member);
       io.to(`board-${boardId}`).emit("member-added", { member });
 
       return { member };
@@ -386,7 +393,7 @@ const boardRoutes = async (fastify) => {
       });
       console.log("Done with creating", list);
 
-      //Continue froom here
+      //Continue from here
       io.to(`board-${boardId}`).emit("list-created", { list });
 
       return { list };
