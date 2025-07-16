@@ -5,6 +5,7 @@ import Button from "../ui/Button";
 import { tasksAPI } from "../../lib/api";
 import { toast } from "sonner";
 import { cn } from "../../utils/cn";
+import { useAuth0WithUser as useAuth0 } from "../../hooks/useAuth0withUser";
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export default function CreateTaskModal({
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth0();
 
   if (!isOpen) return null;
 
@@ -46,10 +48,11 @@ export default function CreateTaskModal({
         position: 0, // Will be calculated on backend
         dueDate: dueDate || undefined,
         priority,
-        createdById: "current-user-id", // This should come from auth context
+        createdById: user?.sub, // This should come from auth context
         assigneeIds: selectedAssignees,
         labelIds: selectedLabels,
       };
+      console.log("Task", taskData);
 
       const response = await tasksAPI.createTask(taskData);
       onTaskCreated(response.data.task);

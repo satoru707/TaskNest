@@ -24,8 +24,6 @@ import {
   Users,
   Brain,
   Sparkles,
-  Trash2,
-  Edit2,
   Settings,
 } from "lucide-react";
 import Button from "../components/ui/Button";
@@ -184,22 +182,6 @@ export default function BoardPage() {
     setIsCreateTaskModalOpen(true);
   };
 
-  const handleTaskCreated = (task: any) => {
-    loadBoard(); // Reload to get updated data
-  };
-
-  const handleTaskUpdated = (taskId: string, updates: any) => {
-    loadBoard(); // Reload to get updated data
-  };
-
-  const handleListCreated = (list: any) => {
-    loadBoard(); // Reload to get updated data
-  };
-
-  const handleMemberAdded = (member: any) => {
-    loadBoard(); // Reload to get updated data
-  };
-
   const handleDeleteList = async (listId: string) => {
     try {
       await boardsAPI.deleteList(boardId!, listId);
@@ -349,7 +331,7 @@ export default function BoardPage() {
                 ?.slice(0, 4)
                 .map((member: any, i: number) => (
                   <div
-                    key={member.id}
+                    key={member.id || i}
                     className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-white font-medium text-xs bg-primary-500"
                     title={member.user.name}
                   >
@@ -473,7 +455,7 @@ export default function BoardPage() {
         task={selectedTask}
         isOpen={isTaskModalOpen}
         onClose={() => setIsTaskModalOpen(false)}
-        onUpdate={handleTaskUpdated}
+        onUpdate={() => loadBoard()}
         boardMembers={currentBoard.members || []}
         boardLabels={currentBoard.labels || []}
       />
@@ -484,21 +466,21 @@ export default function BoardPage() {
         listId={selectedListId}
         boardMembers={currentBoard.members || []}
         boardLabels={currentBoard.labels || []}
-        onTaskCreated={handleTaskCreated}
+        onTaskCreated={() => loadBoard()}
       />
 
       <CreateListModal
         isOpen={isCreateListModalOpen}
         onClose={() => setIsCreateListModalOpen(false)}
         boardId={boardId!}
-        onListCreated={handleListCreated}
+        onListCreated={() => loadBoard()}
       />
 
       <AddMemberModal
         isOpen={isAddMemberModalOpen}
         onClose={() => setIsAddMemberModalOpen(false)}
         boardId={boardId!}
-        onMemberAdded={handleMemberAdded}
+        onMemberAdded={() => loadBoard()}
       />
 
       <AITaskGenerator

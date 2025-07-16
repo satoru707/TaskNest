@@ -378,23 +378,37 @@ const boardRoutes = async (fastify) => {
     try {
       const { boardId } = request.params;
       const { title, position } = request.body;
+      console.log(boardId, title, position);
+
       console.log(
         `Creating list for board ${boardId} with title: ${title}\nPosition: ${position}`
       );
+      //get the number of lists with board id
+      const lists = await prisma.list.findMany({
+        where: { boardId: boardId },
+        select: { position: true },
+      });
+      const new_position = lists.length + 1;
+      console.log("List count", new_position);
+
       const list = await prisma.list.create({
         data: {
           title,
-          boardId,
-          position,
+          position: new_position,
+          board: {
+            connect: { id: boardId },
+          },
+          position: new_position,
         },
         include: {
           tasks: true,
+          board: true,
         },
       });
       console.log("Done with creating", list);
 
       //Continue from here
-      io.to(`board-${boardId}`).emit("list-created", { list });
+      // io.to(`board-${boardId}`).emit("list-created", { list });
 
       return { list };
     } catch (error) {

@@ -29,6 +29,7 @@ export default function KanbanList({
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(title);
+  const [showListMenu, setShowListMenu] = useState(false);
 
   const {
     attributes,
@@ -77,7 +78,7 @@ export default function KanbanList({
     ) {
       onDeleteList?.(id);
     }
-    setShowMenu(false);
+    setShowListMenu(false);
   };
 
   return (
@@ -131,18 +132,18 @@ export default function KanbanList({
 
         <div className="relative">
           <button
-            onClick={() => setShowMenu(!showMenu)}
+            onClick={() => setShowListMenu(!showListMenu)}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <MoreHorizontal size={16} />
           </button>
 
-          {showMenu && (
+          {showListMenu && (
             <div className="absolute right-0 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[150px]">
               <button
                 onClick={() => {
                   setIsEditing(true);
-                  setShowMenu(false);
+                  setShowListMenu(false);
                 }}
                 className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
               >
@@ -182,10 +183,10 @@ export default function KanbanList({
       </div>
 
       {/* Click outside to close menu */}
-      {showMenu && (
+      {showListMenu && (
         <div
           className="fixed inset-0 z-40"
-          onClick={() => setShowMenu(false)}
+          onClick={() => setShowListMenu(false)}
         />
       )}
     </motion.div>

@@ -17,23 +17,45 @@ const taskRoutes = async (fastify) => {
         labelIds,
       } = request.body;
 
+      const user = await prisma.user.findUnique({
+        where: { auth0Id: createdById },
+        select: { id: true },
+      });
+      const the_idfromuser = user.id;
+      //get the number of tasks in that list using listid and get the number 0f tasks in that list and add one to the number of tasks
+      const list = await prisma.list.findUnique({
+        where: { id: listId },
+        select: { tasks: true },
+      });
+      const tasks = list.tasks;
+      const newTaskCount = tasks.length + 1;
+
       const task = await prisma.task.create({
         data: {
           title,
           description,
-          listId,
-          position,
+          position: newTaskCount,
           dueDate: dueDate ? new Date(dueDate) : null,
           priority: priority || "MEDIUM",
-          createdById,
+          // Relations
+          list: {
+            connect: { id: listId }, // Connect to the correct list
+          },
+          createdBy: {
+            connect: { id: the_idfromuser }, // Connect to the user who created the task
+          },
           assignees: assigneeIds
             ? {
-                create: assigneeIds.map((userId) => ({ userId })),
+                create: assigneeIds.map((userId) => ({
+                  user: { connect: { id: userId } },
+                })),
               }
             : undefined,
           labels: labelIds
             ? {
-                create: labelIds.map((labelId) => ({ labelId })),
+                create: labelIds.map((labelId) => ({
+                  label: { connect: { id: labelId } },
+                })),
               }
             : undefined,
         },
@@ -60,6 +82,7 @@ const taskRoutes = async (fastify) => {
               board: true,
             },
           },
+          createdBy: true, // Include the creator user
         },
       });
 
@@ -70,12 +93,13 @@ const taskRoutes = async (fastify) => {
           data: { taskTitle: title },
           boardId: task.list.board.id,
           taskId: task.id,
-          userId: createdById,
+          userId: the_idfromuser,
         },
       });
 
       // Emit real-time update
-      io.to(`board-${task.list.board.id}`).emit("task-created", { task });
+      // io.to(`board-${task.list.board.id}`).emit("task-created", { task });
+      console.log("Task", task);
 
       return { task };
     } catch (error) {

@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../ui/Card";
 import { aiAPI } from "../../lib/api";
 import { toast } from "sonner";
 
+//send the neccesaary with the ai generated from user prompt to the backend on a new list i guess
 interface AITaskGeneratorProps {
   onTasksGenerated: (tasks: any[]) => void;
   boardContext?: string;
