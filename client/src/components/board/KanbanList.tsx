@@ -94,12 +94,12 @@ export default function KanbanList({
       )}
     >
       {/* List header */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="p-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 cursor-move"
-      >
-        <div className="flex items-center gap-2 flex-1">
+      <div className="p-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 cursor-move">
+        <div
+          className="flex items-center gap-2 flex-1"
+          {...attributes}
+          {...listeners}
+        >
           <div
             className={cn(
               "w-3 h-3 rounded-full",

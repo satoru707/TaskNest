@@ -435,7 +435,7 @@ const boardRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      io.to(`board-${boardId}`).emit("list-updated", { list });
+      // io.to(`board-${boardId}`).emit("list-updated", { list });
 
       return { list };
     } catch (error) {
@@ -448,13 +448,14 @@ const boardRoutes = async (fastify) => {
   fastify.delete("/:boardId/lists/:listId", async (request, reply) => {
     try {
       const { boardId, listId } = request.params;
+      console.log("BoardList", boardId, listId);
 
       await prisma.list.delete({
         where: { id: listId },
       });
 
       // Emit real-time update
-      io.to(`board-${boardId}`).emit("list-deleted", { listId });
+      // io.to(`board-${boardId}`).emit("list-deleted", { listId });
 
       return { success: true };
     } catch (error) {

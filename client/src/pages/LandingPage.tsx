@@ -95,7 +95,7 @@ export default function LandingPage() {
   ];
 
   const stats = [
-    { number: "50K+", label: "Active Users" },
+    { number: "1K+", label: "Active Users" },
     { number: "1M+", label: "Tasks Completed" },
     { number: "99.9%", label: "Uptime" },
     { number: "24/7", label: "Support" },
@@ -175,8 +175,9 @@ export default function LandingPage() {
               >
                 Testimonials
               </a>
+              {/* link to docs of tasknest */}
               <a
-                href="#"
+                href="https://github.com/satoru707/TaskNest"
                 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors"
               >
                 Documentation
@@ -240,7 +241,7 @@ export default function LandingPage() {
                   Testimonials
                 </a>
                 <a
-                  href="#"
+                  href="https://github.com/satoru707/TaskNest"
                   className="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -274,7 +275,7 @@ export default function LandingPage() {
             >
               <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-sm font-medium mb-6">
                 <Star className="w-4 h-4 mr-2" />
-                Trusted by 50,000+ teams worldwide
+                Trusted by 50+ teams worldwide
               </div>
             </motion.div>
 
@@ -557,13 +558,6 @@ export default function LandingPage() {
                   Start for free
                 </Button>
               </Link>
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-white text-white hover:bg-white/10 text-lg px-8 py-4"
-              >
-                Contact Sales
-              </Button>
             </div>
           </div>
         </div>

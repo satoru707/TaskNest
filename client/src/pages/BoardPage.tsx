@@ -40,6 +40,7 @@ import { boardsAPI, tasksAPI } from "../lib/api";
 import { useSocket } from "../hooks/useSocket";
 import { useBoardStore } from "../stores/useBoardStore";
 import { toast } from "sonner";
+import { useAuth0WithUser as useAuth0 } from "../hooks/useAuth0withUser";
 
 export default function BoardPage() {
   const { boardId } = useParams();
@@ -60,6 +61,7 @@ export default function BoardPage() {
 
   // Initialize socket connection for this board
   useSocket(boardId);
+  const { user } = useAuth0();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -184,6 +186,8 @@ export default function BoardPage() {
 
   const handleDeleteList = async (listId: string) => {
     try {
+      console.log(boardId, boardId!, listId);
+
       await boardsAPI.deleteList(boardId!, listId);
       loadBoard();
       toast.success("List deleted successfully");
@@ -204,15 +208,16 @@ export default function BoardPage() {
     }
   };
 
-  const handleAITasksGenerated = async (tasks: any[]) => {
+  const handleAITasksGenerated = async (tasks: any[], list_no: any) => {
     try {
       // Create tasks in the first list or a default list
-      const targetListId = currentBoard?.lists[0]?.id;
+      const targetListId = currentBoard?.lists[list_no - 1]?.id;
       if (!targetListId) {
         toast.error("No list available to add tasks");
         return;
       }
-
+      console.log("At least you reaching here");
+      //think I made misatake
       for (const task of tasks) {
         await tasksAPI.createTask({
           title: task.title,
@@ -220,7 +225,7 @@ export default function BoardPage() {
           listId: targetListId,
           position: 0,
           priority: task.priority,
-          createdById: "current-user-id", // This should come from auth context
+          createdById: user?.sub, // This should come from auth context
         });
       }
 

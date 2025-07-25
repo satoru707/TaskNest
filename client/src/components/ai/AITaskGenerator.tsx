@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 //send the neccesaary with the ai generated from user prompt to the backend on a new list i guess
 interface AITaskGeneratorProps {
-  onTasksGenerated: (tasks: any[]) => void;
+  onTasksGenerated: (tasks: any[], listNumber: string) => void;
   boardContext?: string;
 }
 
@@ -21,6 +21,7 @@ export default function AITaskGenerator({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTasks, setGeneratedTasks] = useState<any[]>([]);
   const [summary, setSummary] = useState("");
+  const [listNumber, setListNumber] = useState("");
 
   const handleGenerate = async () => {
     if (!description.trim()) {
@@ -50,9 +51,9 @@ export default function AITaskGenerator({
   };
 
   const handleAddTasks = () => {
-    console.log("Generated tasks:", generatedTasks);
-    //supposed to add task to board
-    onTasksGenerated(generatedTasks);
+    console.log("Generated tasks:", generatedTasks, listNumber);
+    //supposed to add task to board and listNumber
+    onTasksGenerated(generatedTasks, listNumber);
     setIsOpen(false);
     setDescription("");
     setGeneratedTasks([]);
@@ -206,6 +207,13 @@ export default function AITaskGenerator({
                 >
                   Add All Tasks
                 </Button>
+                <input
+                  type="number"
+                  value={listNumber}
+                  onChange={(e) => setListNumber(e.target.value)}
+                  placeholder="List #"
+                  className="w-20 px-2 py-1 border border-gray-300 rounded-md dark:bg-gray-800 dark:text-white dark:border-gray-600"
+                />
                 <Button
                   variant="outline"
                   onClick={() => {

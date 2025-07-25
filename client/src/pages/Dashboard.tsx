@@ -84,7 +84,6 @@ export default function Dashboard() {
       setIsLoading(false);
     }
   };
-  /*******  c1a58f4f-d09d-4dd5-9f09-e9d70e928f92  *******/
 
   const handleBoardCreated = (board: any) => {
     setBoards([board, ...boards]);
