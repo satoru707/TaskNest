@@ -96,7 +96,11 @@ async function startServer() {
 
     const io = new Server(fastify.server, {
       cors: {
-        origin: `${process.env.SOCKET_CORS_ORIGIN || "http://localhost:5173"}`,
+        origin: `${
+          (process.env.SOCKET_CORS_ORIGIN,
+          /^https:\/\/task-nest-blue\.vercel\.app($|\/.*)/,
+          "http://localhost:5173")
+        }`,
         methods: ["GET", "POST"],
         credentials: true,
       },
