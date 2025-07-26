@@ -42,15 +42,16 @@ const fastify = Fastify({
 });
 
 // Register plugins
-fastify.register(cors, {
-  origin: [
-    process.env.SOCKET_CORS_ORIGIN,
-    "https://task-nest-blue.vercel.app",
-    "http://localhost:5173",
-  ],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+fastify.register(cors, (instance) => {
+  return (req, callback) => {
+    const corsOptions = {
+      origin: ["https://task-nest-blue.vercel.app", "http://localhost:5173"],
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+    };
+    callback(null, corsOptions);
+  };
 });
 
 fastify.register(multipart, {
@@ -96,13 +97,13 @@ async function startServer() {
 
     const io = new Server(fastify.server, {
       cors: {
-        origin: `${
+        origin: [
           (process.env.SOCKET_CORS_ORIGIN,
           "https://task-nest-blue.vercel.app",
-          "http://localhost:5173")
-        }`,
+          "http://localhost:5173"),
+        ],
         methods: ["GET", "POST"],
-        // credentials: true,
+        credentials: true,
       },
     });
 
