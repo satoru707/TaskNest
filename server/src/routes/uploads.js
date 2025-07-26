@@ -11,6 +11,7 @@ const uploadRoutes = async (fastify) => {
   fastify.post("/attachments", async (request, reply) => {
     try {
       const data = await request.file();
+      console.log("FIle data", data);
 
       if (!data) {
         reply.status(400).send({ error: "No file uploaded" });
@@ -78,9 +79,9 @@ const uploadRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      io.to(`board-${attachment.task.list.board.id}`).emit("attachment-added", {
-        attachment,
-      });
+      // io.to(`board-${attachment.task.list.board.id}`).emit("attachment-added", {
+      //   attachment,
+      // });
 
       return { attachment };
     } catch (error) {
@@ -171,10 +172,10 @@ const uploadRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      io.to(`board-${attachment.task.list.board.id}`).emit(
-        "attachment-deleted",
-        { attachmentId }
-      );
+      // io.to(`board-${attachment.task.list.board.id}`).emit(
+      //   "attachment-deleted",
+      //   { attachmentId }
+      // );
 
       return { success: true };
     } catch (error) {

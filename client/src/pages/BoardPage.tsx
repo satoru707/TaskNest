@@ -175,6 +175,8 @@ export default function BoardPage() {
   };
 
   const handleTaskClick = (task: any) => {
+    // console.log("Clicked task", task);
+
     setSelectedTask(task);
     setIsTaskModalOpen(true);
   };
@@ -225,7 +227,7 @@ export default function BoardPage() {
           listId: targetListId,
           position: 0,
           priority: task.priority,
-          createdById: user?.sub, // This should come from auth context
+          createdById: user?.sub,
         });
       }
 
@@ -255,6 +257,7 @@ export default function BoardPage() {
         task.description?.toLowerCase().includes(searchQuery.toLowerCase())
     ),
   }));
+  // console.log(filteredLists);
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
@@ -463,6 +466,10 @@ export default function BoardPage() {
         onUpdate={() => loadBoard()}
         boardMembers={currentBoard.members || []}
         boardLabels={currentBoard.labels || []}
+        refresh={() => {
+          setIsTaskModalOpen(false);
+          loadBoard();
+        }}
       />
 
       <CreateTaskModal

@@ -275,7 +275,7 @@ export default function LandingPage() {
             >
               <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-sm font-medium mb-6">
                 <Star className="w-4 h-4 mr-2" />
-                Trusted by 50+ teams worldwide
+                Trusted by 150+ teams worldwide
               </div>
             </motion.div>
 

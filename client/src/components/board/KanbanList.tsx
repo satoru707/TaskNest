@@ -165,8 +165,16 @@ export default function KanbanList({
       {/* List content */}
       <div className="flex-1 p-3 overflow-y-auto space-y-3">
         {tasks.map((task) => (
-          <div key={task.id} onClick={() => onTaskClick?.(task)}>
-            <KanbanCard task={task} />
+          <div
+            key={task.id}
+            onClick={() => {
+              console.log("Man this isnt working");
+              onTaskClick?.(task);
+            }}
+          >
+            <div>
+              <KanbanCard task={task} />
+            </div>
           </div>
         ))}
       </div>

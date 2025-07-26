@@ -247,7 +247,7 @@ const taskRoutes = async (fastify) => {
       }
 
       // Emit real-time update
-      io.to(`board-${task.list.board.id}`).emit("task-updated", { task });
+      // io.to(`board-${task.list.board.id}`).emit("task-updated", { task });
 
       return { task };
     } catch (error) {
@@ -282,7 +282,7 @@ const taskRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      io.to(`board-${task.list.board.id}`).emit("task-deleted", { taskId });
+      // io.to(`board-${task.list.board.id}`).emit("task-deleted", { taskId });
 
       return { success: true };
     } catch (error) {
@@ -296,11 +296,17 @@ const taskRoutes = async (fastify) => {
     try {
       const { taskId } = request.params;
       const { content, userId } = request.body;
+
+      const get_id = await prisma.user.findUnique({
+        where: { auth0Id: userId },
+      });
+      // console.log("Comment problem", taskId, content, userId, get_id);
+
       const comment = await prisma.comment.create({
         data: {
           content,
           taskId,
-          userId,
+          userId: get_id.id,
         },
         include: {
           user: true,
@@ -323,14 +329,14 @@ const taskRoutes = async (fastify) => {
           data: { taskTitle: comment.task.title, comment: content },
           boardId: comment.task.list.board.id,
           taskId: comment.task.id,
-          userId,
+          userId: get_id.id,
         },
       });
 
       // Emit real-time update
-      io.to(`board-${comment.task.list.board.id}`).emit("comment-added", {
-        comment,
-      });
+      // io.to(`board-${comment.task.list.board.id}`).emit("comment-added", {
+      //   comment,
+      // });
 
       return { comment };
     } catch (error) {
@@ -365,10 +371,10 @@ const taskRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      io.to(`board-${task?.list.board.id}`).emit("checklist-item-added", {
-        checklistItem,
-        taskId,
-      });
+      // io.to(`board-${task?.list.board.id}`).emit("checklist-item-added", {
+      //   checklistItem,
+      //   taskId,
+      // });
 
       return { checklistItem };
     } catch (error) {
@@ -403,10 +409,10 @@ const taskRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      io.to(`board-${task?.list.board.id}`).emit("checklist-item-updated", {
-        checklistItem,
-        taskId,
-      });
+      // io.to(`board-${task?.list.board.id}`).emit("checklist-item-updated", {
+      //   checklistItem,
+      //   taskId,
+      // });
 
       return { checklistItem };
     } catch (error) {
@@ -436,10 +442,10 @@ const taskRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      io.to(`board-${task?.list.board.id}`).emit("checklist-item-deleted", {
-        itemId,
-        taskId,
-      });
+      // io.to(`board-${task?.list.board.id}`).emit("checklist-item-deleted", {
+      //   itemId,
+      //   taskId,
+      // });
 
       return { success: true };
     } catch (error) {

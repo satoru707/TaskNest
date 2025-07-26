@@ -15,6 +15,7 @@ import Button from "../ui/Button";
 import { tasksAPI, uploadsAPI } from "../../lib/api";
 import { toast } from "sonner";
 import { cn } from "../../utils/cn";
+import { useAuth0WithUser as useAuth0 } from "../../hooks/useAuth0withUser";
 
 interface TaskModalProps {
   task: any;
@@ -23,6 +24,7 @@ interface TaskModalProps {
   onUpdate: (taskId: string, updates: any) => void;
   boardMembers: any[];
   boardLabels: any[];
+  refresh: () => void;
 }
 
 export default function TaskModal({
@@ -32,6 +34,7 @@ export default function TaskModal({
   onUpdate,
   boardMembers,
   boardLabels,
+  refresh,
 }: TaskModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(task?.title || "");
@@ -50,6 +53,7 @@ export default function TaskModal({
   const [newChecklistItem, setNewChecklistItem] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const { user } = useAuth0();
 
   useEffect(() => {
     if (task) {
@@ -92,15 +96,17 @@ export default function TaskModal({
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
+    console.log("COmment", newComment);
 
     try {
       await tasksAPI.addComment(task.id, {
         content: newComment,
-        userId: "current-user-id", // This should come from auth context
+        userId: user?.sub,
       });
       setNewComment("");
       toast.success("Comment added");
       // Refresh task data
+      refresh();
     } catch (error) {
       console.error("Error adding comment:", error);
       toast.error("Failed to add comment");
@@ -118,6 +124,7 @@ export default function TaskModal({
       setNewChecklistItem("");
       toast.success("Checklist item added");
       // Refresh task data
+      refresh();
     } catch (error) {
       console.error("Error adding checklist item:", error);
       toast.error("Failed to add checklist item");
@@ -132,6 +139,7 @@ export default function TaskModal({
       await tasksAPI.updateChecklistItem(task.id, itemId, { completed });
       toast.success("Checklist item updated");
       // Refresh task data
+      refresh();
     } catch (error) {
       console.error("Error updating checklist item:", error);
       toast.error("Failed to update checklist item");
@@ -149,11 +157,12 @@ export default function TaskModal({
       const formData = new FormData();
       formData.append("file", file);
       formData.append("taskId", task.id);
-      formData.append("uploadedById", "current-user-id"); // This should come from auth context
+      formData.append("uploadedById", user?.sub);
 
       await uploadsAPI.uploadAttachment(formData);
       toast.success("File uploaded successfully");
       // Refresh task data
+      refresh();
     } catch (error) {
       console.error("Error uploading file:", error);
       toast.error("Failed to upload file");
@@ -162,6 +171,16 @@ export default function TaskModal({
     }
   };
 
+  async function handleDeleteTask() {
+    try {
+      await tasksAPI.deleteTask(task.id);
+      toast.success("Task deleted successfully");
+      refresh();
+    } catch (error) {
+      console.error("Error updating checklist item:", error);
+      toast.error("Failed to update checklist item");
+    }
+  }
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "URGENT":
@@ -629,6 +648,7 @@ export default function TaskModal({
                   fullWidth
                   className="mb-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                   icon={<Trash2 size={16} />}
+                  onClick={handleDeleteTask}
                 >
                   Delete Task
                 </Button>

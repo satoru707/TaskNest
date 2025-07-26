@@ -48,7 +48,7 @@ export default function CreateTaskModal({
         position: 0, // Will be calculated on backend
         dueDate: dueDate || undefined,
         priority,
-        createdById: user?.sub, // This should come from auth context
+        createdById: user?.sub,
         assigneeIds: selectedAssignees,
         labelIds: selectedLabels,
       };
