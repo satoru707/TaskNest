@@ -98,11 +98,11 @@ async function startServer() {
       cors: {
         origin: `${
           (process.env.SOCKET_CORS_ORIGIN,
-          /^https:\/\/task-nest-blue\.vercel\.app($|\/.*)/,
+          "https://task-nest-blue.vercel.app",
           "http://localhost:5173")
         }`,
         methods: ["GET", "POST"],
-        credentials: true,
+        // credentials: true,
       },
     });
 
