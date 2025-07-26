@@ -1,5 +1,6 @@
 import path from "path";
-import fs from "fs/promises";
+import fs from "fs"; // for createWriteStream
+import fsp from "fs/promises";
 import { pipeline } from "stream/promises";
 import "dotenv/config";
 
@@ -8,25 +9,38 @@ const uploadRoutes = async (fastify) => {
   const io = fastify.io;
 
   // Upload file attachment
+
   fastify.post("/attachments", async (request, reply) => {
     try {
-      const data = await request.file();
-      console.log("FIle data", data);
+      const parts = request.parts();
 
-      if (!data) {
+      let taskId = null;
+      let uploadedById = null;
+      let fileStream;
+
+      for await (const part of parts) {
+        if (part.file) {
+          fileStream = part;
+        } else {
+          if (part.fieldname === "taskId") taskId = part.value;
+          if (part.fieldname === "uploadedById") uploadedById = part.value;
+        }
+      }
+
+      if (!fileStream) {
         reply.status(400).send({ error: "No file uploaded" });
         return;
       }
-
-      const { taskId, uploadedById } = request.body;
 
       if (!taskId || !uploadedById) {
         reply.status(400).send({ error: "Missing taskId or uploadedById" });
         return;
       }
 
+      console.log("Task id and user Id", taskId, uploadedById);
+
       // Generate unique filename
-      const fileExtension = path.extname(data.filename);
+      const fileExtension = path.extname(fileStream.filename);
       const uniqueFilename = `${Date.now()}-${Math.random()
         .toString(36)
         .substring(2)}${fileExtension}`;
@@ -34,21 +48,26 @@ const uploadRoutes = async (fastify) => {
       const filePath = path.join(uploadDir, uniqueFilename);
 
       // Save file to disk
-      await pipeline(data.file, fs.createWriteStream(filePath));
+      await pipeline(fileStream.file, fs.createWriteStream(filePath));
 
       // Get file stats
-      const stats = await fs.stat(filePath);
+      const stats = await fsp.stat(filePath);
+
+      const user_id = await prisma.user.findUnique({
+        where: { auth0Id: uploadedById },
+        select: { id: true },
+      });
 
       // Save attachment record to database
       const attachment = await prisma.attachment.create({
         data: {
           filename: uniqueFilename,
-          originalName: data.filename,
-          mimeType: data.mimetype,
+          originalName: fileStream.filename,
+          mimeType: fileStream.mimetype,
           size: stats.size,
           url: `/api/uploads/files/${uniqueFilename}`,
           taskId,
-          uploadedById,
+          uploadedById: user_id.id,
         },
         include: {
           uploadedBy: true,
@@ -74,7 +93,7 @@ const uploadRoutes = async (fastify) => {
           },
           boardId: attachment.task.list.board.id,
           taskId: attachment.task.id,
-          userId: uploadedById,
+          userId: user_id.id,
         },
       });
 

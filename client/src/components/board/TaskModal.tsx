@@ -96,7 +96,7 @@ export default function TaskModal({
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
-    console.log("COmment", newComment);
+    // console.log("COmment", newComment);
 
     try {
       await tasksAPI.addComment(task.id, {
@@ -150,6 +150,8 @@ export default function TaskModal({
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
+    console.log(file);
+
     if (!file) return;
 
     setIsUploading(true);
@@ -356,7 +358,15 @@ export default function TaskModal({
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            /* Delete checklist item */
+                            const success = tasksAPI.deleteChecklistItem(
+                              task.id,
+                              item.id
+                            );
+                            console.log(success);
+                            toast.success(
+                              "Checklist item deleted successfully"
+                            );
+                            refresh();
                           }}
                           className="text-gray-400 hover:text-red-500"
                         >
@@ -445,12 +455,12 @@ export default function TaskModal({
 
               {/* Comments */}
               <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 overflow-y-auto space-y-3 ">
                   Comments
                 </h3>
 
                 {task.comments && task.comments.length > 0 && (
-                  <div className="space-y-3 mb-4">
+                  <div className="space-y-3 mb-4 max-h-72 overflow-y-auto pr-2">
                     {task.comments.map((comment: any) => (
                       <div key={comment.id} className="flex gap-3">
                         <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 text-sm font-medium">

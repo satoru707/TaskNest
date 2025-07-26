@@ -427,7 +427,7 @@ const taskRoutes = async (fastify) => {
       const { taskId, itemId } = request.params;
 
       await prisma.checklistItem.delete({
-        where: { id: itemId },
+        where: { id: itemId, taskId: taskId },
       });
 
       const task = await prisma.task.findUnique({
