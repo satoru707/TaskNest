@@ -17,7 +17,7 @@ try {
   await fs.access(uploadsDir);
 } catch {
   await fs.mkdir(uploadsDir, { recursive: true });
-  await fs.mkdir(uploaDir, { recursive: true });
+  await fs.mkdir(uploadDir, { recursive: true });
   console.log("Uploads directory created");
 }
 // Import routes
