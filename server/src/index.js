@@ -12,7 +12,6 @@ import "dotenv/config";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const uploadsDir = join(__dirname, "uploads");
-const uploaDir = join(__dirname, "../uploads");
 
 try {
   await fs.access(uploadsDir);
@@ -45,7 +44,11 @@ const fastify = Fastify({
 fastify.register(cors, (instance) => {
   return (req, callback) => {
     const corsOptions = {
-      origin: ["https://task-nest-blue.vercel.app", "http://localhost:5173"],
+      origin: [
+        "https://task-nest-blue.vercel.app",
+        "http://localhost:5173",
+        process.env.SOCKET_CORS_ORIGIN,
+      ],
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
