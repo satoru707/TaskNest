@@ -12,12 +12,13 @@ import "dotenv/config";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const uploadsDir = join(__dirname, "uploads");
+const uploaDir = join(__dirname, "../uploads");
 
 try {
   await fs.access(uploadsDir);
 } catch {
   await fs.mkdir(uploadsDir, { recursive: true });
-  await fs.mkdir(uploadDir, { recursive: true });
+  await fs.mkdir(uploaDir, { recursive: true });
   console.log("Uploads directory created");
 }
 // Import routes
@@ -41,20 +42,11 @@ const fastify = Fastify({
 });
 
 // Register plugins
-fastify.register(cors, (instance) => {
-  return (req, callback) => {
-    const corsOptions = {
-      origin: [
-        "https://task-nest-blue.vercel.app",
-        "http://localhost:5173",
-        process.env.SOCKET_CORS_ORIGIN,
-      ],
-      credentials: true,
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
-    };
-    callback(null, corsOptions);
-  };
+fastify.register(cors, {
+  origin: ["http://localhost:5173", process.env.SOCKET_CORS_ORIGIN],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 });
 
 fastify.register(multipart, {
@@ -71,9 +63,9 @@ fastify.decorate("io", null);
 // Ensure upload directory exists
 const uploadDir = process.env.UPLOAD_DIR || "./uploads";
 try {
-  fs.access(uploadDir);
+  await fs.access(uploadDir);
 } catch {
-  fs.mkdir(uploadDir, { recursive: true });
+  await fs.mkdir(uploadDir, { recursive: true });
 }
 
 // Register routes
@@ -100,11 +92,7 @@ async function startServer() {
 
     const io = new Server(fastify.server, {
       cors: {
-        origin: [
-          (process.env.SOCKET_CORS_ORIGIN,
-          "https://task-nest-blue.vercel.app",
-          "http://localhost:5173"),
-        ],
+        origin: [process.env.SOCKET_CORS_ORIGIN || "http://localhost:5173"],
         methods: ["GET", "POST"],
         credentials: true,
       },
@@ -145,6 +133,7 @@ async function startServer() {
     fastify.log.info(`Server and WebSocket listening on port ${port}`);
   } catch (err) {
     fastify.log.error(err);
+    await prisma.$disconnect();
     process.exit(1);
   }
 }
