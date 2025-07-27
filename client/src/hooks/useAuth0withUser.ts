@@ -15,8 +15,8 @@ export const useAuth0WithUser = () => {
       // no need to check if user used google or github,just update it
       const { data: existingUser } = await axios.post(
         `${
-          import.meta.env.VITE_API_URL || "http://localhost:3000/api"
-        }/auth/checkEmail`,
+          import.meta.env.SOCKET_CORS_ORIGIN || "http://localhost:3000"
+        }/api/auth/checkEmail`,
         user?.email
       );
       console.log("Existing user:", existingUser);
@@ -25,8 +25,8 @@ export const useAuth0WithUser = () => {
         // Create new user if not found
         const { data: newUser } = await axios.post(
           `${
-            import.meta.env.VITE_API_URL || "http://localhost:3000/api"
-          }/auth/updateID`,
+            import.meta.env.SOCKET_CORS_ORIGIN || "http://localhost:3000"
+          }/api/auth/updateID`,
           {
             auth0Id: user?.sub,
             email: user?.email,
@@ -39,7 +39,7 @@ export const useAuth0WithUser = () => {
       if (error.response?.status === 404) {
         // Create new user if not found
         const { data: newUser } = await axios.post(
-          `${import.meta.env.VITE_API_URL}/users`,
+          `${import.meta.env.SOCKET_CORS_ORIGIN}/api/users`,
           {
             auth0Id: user?.sub,
             email: user?.email,
