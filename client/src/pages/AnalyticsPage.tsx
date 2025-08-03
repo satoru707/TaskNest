@@ -262,9 +262,11 @@ export default function AnalyticsPage() {
           {
             title: "Completion Rate",
             value: `${Math.round(
-              (analytics.overview.createdCompletionRate +
-                analytics.overview.assignedCompletionRate) /
-                2
+              ((analytics.overview.createdCompletionRate +
+                analytics.overview.assignedCompletionRate) *
+                100) /
+                analytics.overview.createdTasks +
+                analytics.overview.assignedTasks
             )}%`,
             icon: <PieChartIcon size={20} />,
             change:
