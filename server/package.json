@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "src/index.js",
   "scripts": {
-    "dev": "prisma generate && prisma migrate deploy && nodemon src/index.js",
+    "dev": "prisma generate && prisma migrate deploy && nodemon src/index.js | pino-pretty",
     "start": "prisma generate && prisma migrate deploy && node src/index.js ",
     "postinstall": "prisma generate",
     "prisma": "prisma",

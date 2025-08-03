@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Archive,
@@ -16,7 +17,7 @@ import {
   CardContent,
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import { boardsAPI } from "../lib/api";
+import { boardsAPI, tasksAPI } from "../lib/api";
 import { useCurrentUser } from "../lib/auth";
 import { toast } from "sonner";
 import { cn } from "../utils/cn";
@@ -27,6 +28,7 @@ export default function ArchivePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadArchivedItems();
@@ -34,53 +36,95 @@ export default function ArchivePage() {
 
   const loadArchivedItems = async () => {
     if (!dbUser) return;
+    console.log(dbUser);
 
     setIsLoading(true);
     try {
-      // Get all boards
+      // Get all archived dboards
       const response = await boardsAPI.getBoards(dbUser.id);
       const boards = response.data.boards;
+      console.log(boards);
 
-      // Simulate some archived items
-      const archivedBoards = boards.slice(-2).map((board: any) => ({
-        ...board,
-        type: "board",
-        archivedAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-        ), // Random date within last 30 days
-        archivedBy: dbUser.name,
-      }));
+      // Filtered Archived Boards
+      var archivedBoards = boards
+        .filter((board: any) => board.isArchived)
+        .map((board: any) => ({
+          createdAt: board.createdAt || new Date(),
+          description: board.description || "Archived board",
+          id: board.id,
+          isArchived: board.isArchived,
+          isBookMarked: board.isBookMarked || false,
+          lists: board.lists || [], // Preserve lists for further filtering
+          owner: {
+            id: board.owner?.id,
+            ownerId: board.ownerId,
+            title: board.owner,
+          },
+          title: board.title,
+          type: "board",
+          archivedAt:
+            board.archivedAt ||
+            new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+          archivedBy: board.archivedBy || dbUser.name,
+        }));
 
-      const archivedTasks = boards
-        .flatMap(
-          (board: any) =>
-            board.lists?.flatMap(
-              (list: any) =>
-                list.tasks?.slice(-1).map((task: any) => ({
-                  ...task,
+      // Filtered Archived Tasks
+      var archivedTasks = boards.flatMap(
+        (board: any) =>
+          board.lists?.flatMap(
+            (list: any) =>
+              list.tasks
+                ?.filter((task: any) => task.isArchived)
+                .map((task: any) => ({
+                  createdAt: task.createdAt || new Date(),
+                  description: task.description || "Archived task",
+                  id: task.id,
+                  isArchived: task.isArchived,
+                  isBookMarked: task.isBookMarked || false,
+                  owner: {
+                    id: task.owner?.id,
+                    ownerId: task.owner?.ownerId,
+                    title: task.owner?.title,
+                  },
+                  title: task.title,
                   type: "task",
                   boardTitle: board.title,
                   listTitle: list.title,
-                  archivedAt: new Date(
-                    Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-                  ),
-                  archivedBy: dbUser.name,
+                  archivedAt:
+                    task.archivedAt ||
+                    new Date(
+                      Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+                    ),
+                  archivedBy: task.archivedBy || dbUser.name,
                 })) || []
-            ) || []
-        )
-        .slice(0, 3);
+          ) || []
+      );
 
-      const archivedLists = boards.slice(0, 1).flatMap(
+      var archivedLists = boards.flatMap(
         (board: any) =>
-          board.lists?.slice(-1).map((list: any) => ({
-            ...list,
-            type: "list",
-            boardTitle: board.title,
-            archivedAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-            ),
-            archivedBy: dbUser.name,
-          })) || []
+          board.lists
+            ?.filter((list: any) => list.isArchived)
+            .map((list: any) => ({
+              createdAt: list.createdAt || new Date(),
+              description: list.description,
+              id: list.id,
+              isArchived: list.isArchived,
+              isBookMarked: list.isBookMarked || false,
+              tasks: list.tasks || [],
+              type: "list",
+              owner: {
+                id: list.owner?.id,
+                ownerId: list.owner?.ownerId,
+                title: list.owner?.title,
+              },
+              title: list.title,
+              boardTitle: board.title,
+              boardId: board.id,
+              archivedAt:
+                list.archivedAt ||
+                new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+              archivedBy: list.archivedBy || dbUser.name,
+            })) || []
       );
 
       setArchivedItems([...archivedBoards, ...archivedTasks, ...archivedLists]);
@@ -94,9 +138,27 @@ export default function ArchivePage() {
 
   const handleRestore = async (item: any) => {
     try {
-      // In a real app, you'd call an API to restore the item
-      setArchivedItems((prev) =>
-        prev.filter((archived) => archived.id !== item.id)
+      item.type == "board"
+        ? boardsAPI.archiveBoard(item.id, {
+            isArchived: false,
+            userId: dbUser.id,
+          })
+        : item.type == "task"
+        ? tasksAPI.archiveTask(item.id, {
+            isArchived: false,
+            userId: dbUser.id,
+          })
+        : boardsAPI.archiveList(item.boardId, item.id, {
+            isArchived: false,
+            userId: dbUser.id,
+          });
+      // console.log("This is the item", item);
+      console.log(item.boardId, item.id, false, dbUser.id);
+
+      setArchivedItems((prevItems: any[]) =>
+        prevItems.filter(
+          (it: any) => !(it.type === item.type && it.id === item.id)
+        )
       );
       toast.success(`${item.type} restored successfully`);
     } catch (error) {
@@ -106,15 +168,24 @@ export default function ArchivePage() {
   };
 
   const handlePermanentDelete = async (item: any) => {
+    console.log(item);
+
     const confirmDelete = window.confirm(
       `Are you sure you want to permanently delete "${item.title}"? This action cannot be undone.`
     );
 
     if (confirmDelete) {
       try {
-        // In a real app, you'd call an API to permanently delete the item
-        setArchivedItems((prev) =>
-          prev.filter((archived) => archived.id !== item.id)
+        item.type == "board"
+          ? boardsAPI.deleteBoard(item.id)
+          : item.type == "task"
+          ? tasksAPI.deleteTask(item.id)
+          : boardsAPI.deleteList(item.boardId, item.id);
+
+        setArchivedItems((prevItems: any[]) =>
+          prevItems.filter(
+            (it: any) => !(it.type === item.type && it.id === item.id)
+          )
         );
         toast.success(`${item.type} permanently deleted`);
       } catch (error) {
@@ -336,7 +407,7 @@ export default function ArchivePage() {
                 ? `No archived items match "${searchQuery}". Try a different search term.`
                 : "Archived boards, lists, and tasks will appear here."}
             </p>
-            <Button onClick={() => window.history.back()}>
+            <Button onClick={() => navigate("/dashboard")}>
               Go Back to Dashboard
             </Button>
           </CardContent>

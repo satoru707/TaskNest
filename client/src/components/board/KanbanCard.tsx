@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { format } from "date-fns";
@@ -7,16 +8,33 @@ import {
   Calendar,
   CheckSquare,
   Flag,
-  GripVertical,
+  BookmarkCheck,
+  Bookmark,
+  Archive,
+  Move,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
+import { toast } from "sonner";
+import { tasksAPI } from "../../lib/api";
 
 interface KanbanCardProps {
   task: any;
   onClick?: (task: any) => void;
+  onTaskUpdate?: (taskId: string, updates: any) => void;
+  onBookmarkToggle?: (type: "task", id: string, isBookmarked: boolean) => void;
+  refresh: () => void;
 }
 
-export default function KanbanCard({ task, onClick }: KanbanCardProps) {
+export default function KanbanCard({
+  task,
+  onClick,
+  onTaskUpdate,
+  onBookmarkToggle,
+  refresh,
+}: KanbanCardProps) {
+  const [isBookmarked, setIsBookmarked] = useState(task.isBookMarked || false);
+  const [isCompleted, setIsCompleted] = useState(task.completed || false);
+
   const {
     attributes,
     listeners,
@@ -51,6 +69,45 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
     }
   };
 
+  const handleCompletionToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newCompletedState = !isCompleted;
+    setIsCompleted(newCompletedState);
+    await tasksAPI.updateTask(task.id.split("-")[1], {
+      completed: newCompletedState,
+    });
+    onTaskUpdate?.(task.id, { completed: newCompletedState });
+    toast.success(
+      newCompletedState ? "Task completed!" : "Task marked as incomplete"
+    );
+  };
+
+  const handleBookmarkToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newBookmarkState = !isBookmarked;
+    setIsBookmarked(newBookmarkState);
+    onBookmarkToggle?.("task", task.id, newBookmarkState);
+    const ans = await tasksAPI.updateTask(task.id.split("-")[1], {
+      isBookmarked: newBookmarkState,
+    });
+    console.log(ans);
+    toast.success(newBookmarkState ? "Task bookmarked" : "Bookmark removed");
+  };
+
+  const handleArchive = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await tasksAPI.updateTask(task.id.split("-")[1], {
+        isArchived: true,
+      });
+      toast.success("Task archived");
+      refresh();
+    } catch (error) {
+      console.error("Error archiving task:", error);
+      toast.error("Failed to archive task");
+    }
+  };
+
   const completedChecklist =
     task.checklistItems?.filter((item: any) => item.completed).length || 0;
   const totalChecklist = task.checklistItems?.length || 0;
@@ -59,24 +116,60 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
       className={cn(
-        "relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md p-3 transition-all group",
-        isDragging ? "opacity-50 z-10 shadow-md rotate-3" : "opacity-100"
+        "relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md p-3 transition-all group cursor-move",
+        isDragging ? "opacity-50 z-10 shadow-md rotate-3" : "opacity-100",
+        isCompleted && "opacity-75 bg-gray-50 dark:bg-gray-900"
       )}
     >
-      {/* Drag handle */}
       <div
+        {...attributes}
         {...listeners}
-        className="absolute top-2 right-2 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-grab active:cursor-grabbing"
+        className="absolute top-2 left-10 w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded cursor-move flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
       >
-        <GripVertical size={14} className="text-gray-400" />
+        <Move size={16} />
+      </div>
+      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={handleCompletionToggle}
+          className={cn(
+            "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+            isCompleted
+              ? "bg-green-500 border-green-500 text-white"
+              : "border-gray-300 dark:border-gray-600 hover:border-green-500"
+          )}
+        >
+          {isCompleted && <CheckSquare size={12} />}
+        </button>
+      </div>
+
+      {/* Bookmark and Archive Buttons */}
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+        <button
+          onClick={handleBookmarkToggle}
+          className={cn(
+            "p-1 rounded transition-colors",
+            isBookmarked
+              ? "text-yellow-500 hover:text-yellow-600"
+              : "text-gray-400 hover:text-yellow-500"
+          )}
+        >
+          {isBookmarked ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
+        </button>
+        <button
+          onClick={(e) => handleArchive(e)}
+          className={cn(
+            "p-1 rounded transition-colors text-blue-500 hover:text-yellow-600"
+          )}
+        >
+          <Archive size={14} />
+        </button>
       </div>
 
       {/* Clickable card content */}
       <div className="cursor-pointer" onClick={() => onClick?.(task)}>
         {/* Priority indicator */}
-        {task.priority && task.priority !== "MEDIUM" && (
+        {task.priority && (
           <div className="flex items-center justify-between mb-2">
             <Flag size={12} className={getPriorityColor(task.priority)} />
           </div>

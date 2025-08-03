@@ -25,6 +25,10 @@ import {
   Brain,
   Sparkles,
   Settings,
+  Star,
+  Bookmark,
+  BookmarkCheck,
+  Archive,
 } from "lucide-react";
 import Button from "../components/ui/Button";
 import KanbanList from "../components/board/KanbanList";
@@ -36,17 +40,19 @@ import AddMemberModal from "../components/board/AddMemberModal";
 import AITaskGenerator from "../components/ai/AITaskGenerator";
 import AISummaryPanel from "../components/ai/AISummaryPanel";
 import EditBoardModal from "../components/board/EditBoardModal";
-import { boardsAPI, tasksAPI } from "../lib/api";
+import { authAPI, boardsAPI, tasksAPI } from "../lib/api";
 import { useSocket } from "../hooks/useSocket";
 import { useBoardStore } from "../stores/useBoardStore";
 import { toast } from "sonner";
 import { useAuth0WithUser as useAuth0 } from "../hooks/useAuth0withUser";
+import { useBookmarkStore } from "../stores/useBookMarkStore";
 
 export default function BoardPage() {
   const { boardId } = useParams();
   const navigate = useNavigate();
   const { currentBoard, setCurrentBoard, setLoading } = useBoardStore();
   const [activeId, setActiveId] = useState(null);
+  const { addBookmark } = useBookmarkStore();
   const [selectedTask, setSelectedTask] = useState(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
@@ -58,8 +64,8 @@ export default function BoardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showBoardMenu, setShowBoardMenu] = useState(false);
   const [showEditBoardModal, setShowEditBoardModal] = useState(false);
+  const [boardIsBookmarked, setBoardIsBookmarked] = useState(false);
 
-  // Initialize socket connection for this board
   useSocket(boardId);
   const { user } = useAuth0();
 
@@ -71,18 +77,48 @@ export default function BoardPage() {
   );
 
   useEffect(() => {
-    if (boardId) {
-      loadBoard();
-    }
+    if (boardId) loadBoard();
   }, [boardId]);
+
+  const handleBoardBookmark = async () => {
+    if (!currentBoard) return;
+
+    const newBookmarkState = !boardIsBookmarked;
+    setBoardIsBookmarked(newBookmarkState);
+    addBookmark({
+      id: currentBoard.id,
+      type: "board",
+      title: currentBoard.title,
+      description: currentBoard.description,
+      bookmarkedAt: new Date().toISOString(),
+    });
+    const userId = await authAPI.getProfile(user?.sub);
+    await boardsAPI.bookMarkBoard(currentBoard.id, {
+      isBookMarked: newBookmarkState,
+      userId: userId.data.user.id,
+    });
+    toast.success(newBookmarkState ? "Board bookmarked" : "Bookmark removed");
+    setShowEditBoardModal(false);
+  };
+
+  const handleBoardArchive = async () => {
+    if (!currentBoard || !user?.sub) return;
+    const userId = await authAPI.getProfile(user.sub);
+    await boardsAPI.archiveBoard(currentBoard.id, {
+      isArchived: true,
+      userId: userId.data.user.id,
+    });
+    toast.success("Board archived");
+    navigate("/dashboard");
+  };
 
   const loadBoard = async () => {
     if (!boardId) return;
-
     setLoading(true);
     try {
       const response = await boardsAPI.getBoard(boardId);
       setCurrentBoard(response.data.board);
+      setBoardIsBookmarked(response.data.board.isBookMarked || false);
     } catch (error) {
       console.error("Error loading board:", error);
       toast.error("Failed to load board");
@@ -104,82 +140,82 @@ export default function BoardPage() {
     if (active.id !== over.id) {
       // Handle list reordering
       if (
-        active.id.toString().includes("list-") &&
-        over.id.toString().includes("list-")
+        active.id.toString().startsWith("list-") &&
+        over.id.toString().startsWith("list-")
       ) {
         const oldIndex = currentBoard.lists.findIndex(
-          (list: any) => list.id === active.id
+          (list: any) => `list-${list.id}` === active.id
         );
         const newIndex = currentBoard.lists.findIndex(
-          (list: any) => list.id === over.id
+          (list: any) => `list-${list.id}` === over.id
         );
-
         const newLists = arrayMove(currentBoard.lists, oldIndex, newIndex);
         setCurrentBoard({ ...currentBoard, lists: newLists });
-
-        // Update positions on backend
-        try {
-          await Promise.all(
-            newLists.map((list: any, index: number) =>
-              boardsAPI.updateList(boardId!, list.id, { position: index })
-            )
-          );
-        } catch (error) {
-          console.error("Error updating list positions:", error);
-          toast.error("Failed to update list positions");
-          loadBoard(); // Reload to get correct state
-        }
+        await Promise.all(
+          newLists.map((list: any, index: number) =>
+            boardsAPI.updateList(boardId!, list.id, { position: index })
+          )
+        );
       }
 
-      // Handle task reordering or moving between lists
-      if (active.id.toString().includes("task-")) {
+      // Handle task reordering or moving
+      if (active.id.toString().startsWith("task-")) {
         const activeTask = currentBoard.lists
           .flatMap((list: any) => list.tasks)
-          .find((task: any) => task.id === active.id);
+          .find((task: any) => `task-${task.id}` === active.id);
 
         if (!activeTask) return;
 
         let targetListId = activeTask.listId;
         let newPosition = activeTask.position;
 
-        // Determine target list and position
-        if (over.id.toString().includes("list-")) {
-          targetListId = over.id;
-          newPosition = 0;
-        } else if (over.id.toString().includes("task-")) {
-          const overTask = currentBoard.lists
-            .flatMap((list: any) => list.tasks)
-            .find((task: any) => task.id === over.id);
+        const overList = currentBoard.lists.find(
+          (list: any) => `list-${list.id}` === over.id
+        );
+        const overTask = currentBoard.lists
+          .flatMap((list: any) => list.tasks)
+          .find((task: any) => `task-${task.id}` === over.id);
 
-          if (overTask) {
-            targetListId = overTask.listId;
-            newPosition = overTask.position;
-          }
+        if (overList) {
+          targetListId = overList.id;
+          newPosition = overList.tasks.length; // Append to end of list
+        } else if (overTask) {
+          targetListId = overTask.listId;
+          const overIndex =
+            overList?.tasks.findIndex((t: any) => t.id === overTask.id) || 0;
+          newPosition = overIndex + (active.id < over.id ? 0 : 1); // Adjust position based on drag direction
         }
 
-        // Update task position/list
-        try {
-          await tasksAPI.updateTask(activeTask.id, {
-            listId: targetListId,
-            position: newPosition,
-          });
-
-          // Reload board to get updated state
-          loadBoard();
-        } catch (error) {
-          console.error("Error moving task:", error);
-          toast.error("Failed to move task");
-        }
+        await tasksAPI.updateTask(activeTask.id, {
+          listId: targetListId,
+          position: newPosition,
+        });
+        loadBoard(); // Reload to sync state
       }
     }
   };
 
-  const handleTaskClick = (task: any) => {
-    // console.log("Clicked task", task);
+  const handleTaskClick = async (task: any) => {
+    console.log(task);
 
-    setSelectedTask(task);
+    if (typeof task === "string") {
+      console.log("task", task);
+      const task_data = await tasksAPI.updateTask(task, { id: task });
+      setSelectedTask(task_data.data.task);
+    } else {
+      console.log("task", task);
+
+      setSelectedTask(task);
+    }
     setIsTaskModalOpen(true);
   };
+
+  useEffect(() => {
+    if (localStorage.getItem("taskId")) {
+      handleTaskClick(localStorage.getItem("taskId")!);
+      localStorage.clear();
+    }
+  }, []);
 
   const handleCreateTask = (listId: string) => {
     setSelectedListId(listId);
@@ -188,8 +224,6 @@ export default function BoardPage() {
 
   const handleDeleteList = async (listId: string) => {
     try {
-      console.log(boardId, boardId!, listId);
-
       await boardsAPI.deleteList(boardId!, listId);
       loadBoard();
       toast.success("List deleted successfully");
@@ -237,7 +271,6 @@ export default function BoardPage() {
       toast.error("Failed to create AI-generated tasks");
     }
   };
-
   if (!currentBoard) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -257,11 +290,9 @@ export default function BoardPage() {
         task.description?.toLowerCase().includes(searchQuery.toLowerCase())
     ),
   }));
-  // console.log(filteredLists);
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {/* Board header */}
       <header className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -276,8 +307,7 @@ export default function BoardPage() {
                   onClick={() => setIsAddMemberModalOpen(true)}
                   className="flex items-center gap-1 text-gray-600 dark:text-gray-300"
                 >
-                  <Users size={16} />
-                  <span>Share</span>
+                  <Users size={16} /> <span>Share</span>
                 </Button>
                 <div className="h-5 border-r border-gray-300 dark:border-gray-600 mx-2"></div>
                 <Button
@@ -300,7 +330,6 @@ export default function BoardPage() {
               </p>
             )}
           </div>
-
           <div className="flex items-center gap-2">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -314,17 +343,16 @@ export default function BoardPage() {
                 className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
-
             <Button
               variant="outline"
               size="sm"
+              id="ai_button"
               onClick={() => setIsAIGeneratorOpen(true)}
               icon={<Sparkles size={16} />}
               className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-none hover:from-purple-700 hover:to-blue-700"
             >
               AI Generate
             </Button>
-
             <Button
               variant="outline"
               size="sm"
@@ -333,7 +361,6 @@ export default function BoardPage() {
             >
               AI Insights
             </Button>
-
             <div className="flex -space-x-2">
               {currentBoard.members
                 ?.slice(0, 4)
@@ -366,7 +393,6 @@ export default function BoardPage() {
                 <UserPlus size={14} />
               </button>
             </div>
-
             <div className="relative">
               <Button
                 variant="ghost"
@@ -376,29 +402,50 @@ export default function BoardPage() {
               >
                 <MoreHorizontal size={18} />
               </Button>
-
               {showBoardMenu && (
                 <div className="absolute right-0 top-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px]">
                   <button
                     onClick={() => {
-                      // Board settings functionality
                       setShowEditBoardModal(true);
                       setShowBoardMenu(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                   >
-                    <Settings size={14} />
-                    Board Settings
+                    <Settings size={14} /> Board Settings
                   </button>
                   <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                  <button
+                    onClick={handleBoardBookmark}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    {boardIsBookmarked ? (
+                      <BookmarkCheck size={14} />
+                    ) : (
+                      <Bookmark size={14} />
+                    )}
+                    {boardIsBookmarked ? "Remove Bookmark" : "Bookmark Board"}
+                  </button>
+                  <button
+                    onClick={handleBoardArchive}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <Archive size={14} /> Archive Board
+                  </button>
+                  <button
+                    onClick={() => {
+                      toast.info("Export board functionality coming soon");
+                      setShowEditBoardModal(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <Star size={14} /> Export Board
+                  </button>
                 </div>
               )}
             </div>
           </div>
         </div>
       </header>
-
-      {/* Board content */}
       <div className="flex-1 overflow-x-auto p-6">
         <DndContext
           sensors={sensors}
@@ -408,25 +455,28 @@ export default function BoardPage() {
         >
           <div className="flex gap-6 h-full">
             <SortableContext
-              items={filteredLists.map((list: any) => list.id)}
+              items={filteredLists.map((list: any) => `list-${list.id}`)} // Prefix with "list-"
               strategy={horizontalListSortingStrategy}
             >
-              {filteredLists.map((list: any) => (
-                <KanbanList
-                  key={list.id}
-                  id={list.id}
-                  title={list.title}
-                  tasks={list.tasks}
-                  onTaskClick={handleTaskClick}
-                  onCreateTask={() => handleCreateTask(list.id)}
-                  onDeleteList={handleDeleteList}
-                  onEditList={handleEditList}
-                />
-              ))}
+              {filteredLists
+                .filter((list: any) => !list.isArchived)
+                .map((list: any) => (
+                  <KanbanList
+                    key={list.id}
+                    id={`list-${list.id}`} // Prefix id for consistency
+                    title={list.title}
+                    tasks={list.tasks.map((task: any) => ({
+                      ...task,
+                      id: `task-${task.id}`, // Prefix task ids
+                    }))}
+                    onTaskClick={handleTaskClick}
+                    onCreateTask={() => handleCreateTask(list.id)}
+                    onDeleteList={handleDeleteList}
+                    onEditList={handleEditList}
+                    refresh={loadBoard}
+                  />
+                ))}
             </SortableContext>
-
-            {/* Add new list button */}
-            {/* the dots on the list,sort em out */}
             <div className="flex-shrink-0 w-72">
               <button
                 onClick={() => setIsCreateListModalOpen(true)}
@@ -437,28 +487,39 @@ export default function BoardPage() {
               </button>
             </div>
           </div>
-
           <DragOverlay>
-            {activeId && activeId.toString().includes("task-") && (
+            {activeId && activeId.toString().startsWith("list-") && (
+              <KanbanList
+                id={activeId}
+                title={
+                  currentBoard.lists.find(
+                    (list: any) => `list-${list.id}` === activeId
+                  )?.title || ""
+                }
+                tasks={[]}
+                onTaskClick={handleTaskClick}
+                onCreateTask={() => {}}
+                onDeleteList={handleDeleteList}
+                onEditList={handleEditList}
+                refresh={loadBoard}
+              />
+            )}
+            {activeId && activeId.toString().startsWith("task-") && (
               <KanbanCard
                 task={currentBoard.lists
                   .flatMap((list: any) => list.tasks)
-                  .find((task: any) => task.id === activeId)}
+                  .find((task: any) => `task-${task.id}` === activeId)}
               />
             )}
           </DragOverlay>
         </DndContext>
       </div>
-
-      {/* Click outside to close board menu */}
       {showBoardMenu && (
         <div
           className="fixed inset-0 z-40"
           onClick={() => setShowBoardMenu(false)}
         />
       )}
-
-      {/* Modals */}
       <TaskModal
         task={selectedTask}
         isOpen={isTaskModalOpen}
@@ -471,7 +532,6 @@ export default function BoardPage() {
           loadBoard();
         }}
       />
-
       <CreateTaskModal
         isOpen={isCreateTaskModalOpen}
         onClose={() => setIsCreateTaskModalOpen(false)}
@@ -480,32 +540,27 @@ export default function BoardPage() {
         boardLabels={currentBoard.labels || []}
         onTaskCreated={() => loadBoard()}
       />
-
       <CreateListModal
         isOpen={isCreateListModalOpen}
         onClose={() => setIsCreateListModalOpen(false)}
         boardId={boardId!}
         onListCreated={() => loadBoard()}
       />
-
       <AddMemberModal
         isOpen={isAddMemberModalOpen}
         onClose={() => setIsAddMemberModalOpen(false)}
         boardId={boardId!}
         onMemberAdded={() => loadBoard()}
       />
-
-      <AITaskGenerator
+      {/* <AITaskGenerator
         onTasksGenerated={handleAITasksGenerated}
         boardContext={currentBoard.title}
-      />
-
+      /> */}
       <AISummaryPanel
         board={currentBoard}
         isVisible={isAISummaryOpen}
         onClose={() => setIsAISummaryOpen(false)}
       />
-
       <EditBoardModal
         isOpen={!!showEditBoardModal}
         onClose={() => setShowEditBoardModal(false)}
@@ -513,7 +568,6 @@ export default function BoardPage() {
         onBoardDeleted={() => navigate("/dashboard")}
         onBoardUpdated={() => loadBoard()}
       />
-
       {isAIGeneratorOpen && (
         <AITaskGenerator
           onTasksGenerated={handleAITasksGenerated}

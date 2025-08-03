@@ -58,7 +58,11 @@ export default function Dashboard() {
     try {
       // Load boards
       const boardsResponse = await boardsAPI.getBoards(dbUser.id);
-      setBoards(boardsResponse.data.boards);
+      setBoards(
+        boardsResponse.data.boards.filter(
+          (board: { isArchived: boolean }) => !board.isArchived
+        )
+      );
 
       // Load analytics if user has data
       if (boardsResponse.data.boards.length > 0) {
@@ -88,7 +92,6 @@ export default function Dashboard() {
   const handleBoardCreated = (board: any) => {
     setBoards([board, ...boards]);
     navigate(`/boards/${board.id}`);
-    toast.success("Board created successfully");
   };
 
   const handleAITasksGenerated = async (tasks: any[]) => {
@@ -102,7 +105,7 @@ export default function Dashboard() {
         setIsCreateBoardModalOpen(true);
         break;
       case "ai-generate":
-        setIsAIGeneratorOpen(true);
+        toast.info("Tasks can only be generated within a board.");
         break;
       case "analytics":
         navigate("/analytics");
@@ -220,7 +223,9 @@ export default function Dashboard() {
         <div className="flex flex-wrap gap-3">
           <Button
             variant="outline"
-            onClick={() => handleQuickAction("ai-generate")}
+            onClick={() =>
+              toast.info("Tasks can only be generated within a board.")
+            }
             icon={<Sparkles size={18} />}
             className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-none hover:from-purple-700 hover:to-blue-700"
           >
@@ -341,13 +346,6 @@ export default function Dashboard() {
                 icon={<Plus size={18} />}
               >
                 Create Your First Board
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setIsAIGeneratorOpen(true)}
-                icon={<Sparkles size={18} />}
-              >
-                Generate with AI
               </Button>
             </div>
           </CardContent>

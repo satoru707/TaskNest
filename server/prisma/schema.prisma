@@ -36,7 +36,11 @@ model Board {
   ownerId     String
   isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
+  isArchived  Boolean  @default(false)
+  isBookMarked Boolean @default(false)
   updatedAt   DateTime @updatedAt
+  archivedAt  DateTime?
+  bookMarkedAt DateTime?
 
   // Relations
   owner     User          @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
@@ -68,9 +72,11 @@ model List {
   title    String
   boardId  String
   position Int
+  isArchived  Boolean  @default(false)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  archivedAt DateTime?
 
   // Relations
   board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
@@ -89,9 +95,13 @@ model Task {
   completed   Boolean   @default(false)
   priority    Priority  @default(MEDIUM)
   createdById String
-  
+  isArchived  Boolean  @default(false)
+  isBookMarked Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  archivedAt DateTime?
+  bookMarkedAt DateTime?
 
   // Relations
   list         List           @relation(fields: [listId], references: [id], onDelete: Cascade)
@@ -237,13 +247,19 @@ enum ActivityType {
   BOARD_CREATED
   BOARD_UPDATED
   BOARD_DELETED
+  BOARD_ARCHIVED
+  BOARD_BOOKMARKED
   LIST_CREATED
   LIST_UPDATED
   LIST_DELETED
+  LIST_ARCHIVED
+  LIST_BOOKMARKED
   TASK_CREATED
   TASK_UPDATED
   TASK_DELETED
   TASK_MOVED
+  TASK_ARCHIVED
+  TASK_BOOKMARKED
   TASK_ASSIGNED
   TASK_COMPLETED
   COMMENT_ADDED

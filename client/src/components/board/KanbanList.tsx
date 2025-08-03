@@ -1,11 +1,12 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
-import { MoreHorizontal, Plus, Trash2, Edit2 } from "lucide-react";
+import { MoreHorizontal, Plus, Trash2, Edit2, Archive } from "lucide-react";
 import { useState } from "react";
 import KanbanCard from "./KanbanCard";
-import Button from "../ui/Button";
 import { cn } from "../../utils/cn";
+import { boardsAPI, authAPI } from "../../lib/api";
+import { useAuth0WithUser as useAuth0 } from "../../hooks/useAuth0withUser";
 
 interface KanbanListProps {
   id: string;
@@ -15,6 +16,8 @@ interface KanbanListProps {
   onCreateTask?: () => void;
   onDeleteList?: (listId: string) => void;
   onEditList?: (listId: string, title: string) => void;
+  onArchiveList?: (listId: string) => void;
+  refresh: () => void;
 }
 
 export default function KanbanList({
@@ -25,11 +28,13 @@ export default function KanbanList({
   onCreateTask,
   onDeleteList,
   onEditList,
+  onArchiveList,
+  refresh,
 }: KanbanListProps) {
-  const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(title);
   const [showListMenu, setShowListMenu] = useState(false);
+  const { user } = useAuth0();
 
   const {
     attributes,
@@ -70,6 +75,27 @@ export default function KanbanList({
     setEditTitle(title);
   };
 
+  const handleArchiving = async () => {
+    if (
+      window.confirm(
+        `Are you sure you want to archive "${title}"? This will hide all tasks in this list.`
+      ) &&
+      user?.sub
+    ) {
+      console.log(id);
+      const userId = await authAPI.getProfile(user.sub);
+
+      const listData = await boardsAPI.getList(id);
+      console.log(listData.data);
+      await boardsAPI.archiveList(listData.data.boardId, id, {
+        isArchived: true,
+        userId: userId.data.user.id,
+      });
+      setShowListMenu(false);
+      refresh(); // Refresh the list after archiving
+    }
+  };
+
   const handleDelete = () => {
     if (
       window.confirm(
@@ -83,10 +109,7 @@ export default function KanbanList({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      ref={setNodeRef}
+      ref={setNodeRef} // Attach the ref for drag-and-drop
       style={style}
       className={cn(
         "flex-shrink-0 w-72 h-full flex flex-col rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700",
@@ -100,13 +123,6 @@ export default function KanbanList({
           {...attributes}
           {...listeners}
         >
-          <div
-            className={cn(
-              "w-3 h-3 rounded-full",
-              listColors[title as keyof typeof listColors] ||
-                "bg-gray-300 dark:bg-gray-600"
-            )}
-          ></div>
           {isEditing ? (
             <input
               type="text"
@@ -126,7 +142,7 @@ export default function KanbanList({
             </h3>
           )}
           <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-            {tasks.length}
+            {tasks.filter((task) => !task.isArchived).length}
           </span>
         </div>
 
@@ -151,6 +167,13 @@ export default function KanbanList({
                 Edit List
               </button>
               <button
+                onClick={handleArchiving}
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              >
+                <Archive size={14} />
+                Archive List
+              </button>
+              <button
                 onClick={handleDelete}
                 className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
               >
@@ -164,19 +187,19 @@ export default function KanbanList({
 
       {/* List content */}
       <div className="flex-1 p-3 overflow-y-auto space-y-3">
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            onClick={() => {
-              console.log("Man this isnt working");
-              onTaskClick?.(task);
-            }}
-          >
-            <div>
-              <KanbanCard task={task} />
+        {tasks
+          .filter((task) => !task.isArchived)
+          .map((task) => (
+            <div
+              key={task.id}
+              onClick={() => {
+                console.log("Task clicked:", task.id);
+                onTaskClick?.(task);
+              }}
+            >
+              <KanbanCard task={task} refresh={refresh} />
             </div>
-          </div>
-        ))}
+          ))}
       </div>
 
       {/* Add card button */}

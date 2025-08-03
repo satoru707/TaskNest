@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -17,7 +18,7 @@ import {
   CardContent,
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import { boardsAPI } from "../lib/api";
+import { boardsAPI, tasksAPI } from "../lib/api";
 import { useCurrentUser } from "../lib/auth";
 import { toast } from "sonner";
 import { cn } from "../utils/cn";
@@ -27,6 +28,7 @@ export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadBookmarks();
@@ -40,37 +42,61 @@ export default function BookmarksPage() {
       // Get all boards and filter bookmarked ones
       const response = await boardsAPI.getBoards(dbUser.id);
       const boards = response.data.boards;
+      console.log(boards);
 
-      // In a real app, you'd have a bookmarks table
-      // For now, we'll simulate some bookmarked boards
-      const bookmarkedBoards = boards
-        .slice(0, Math.min(3, boards.length))
+      var bookmarkedBoards = boards
+        .filter((board: any) => board.isBookMarked)
         .map((board: any) => ({
-          ...board,
-          bookmarkedAt: new Date(
-            Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
-          ), // Random date within last week
+          createdAt: board.createdAt || new Date(),
+          description: board.description || "Archived board",
+          id: board.id,
+          isArchived: board.isArchived,
+          isBookMarked: board.isBookMarked || false,
+          lists: board.lists || [], // Preserve lists for further filtering
+          owner: {
+            id: board.owner?.id,
+            ownerId: board.ownerId,
+            title: board.owner,
+          },
+          title: board.title,
           type: "board",
+          archivedAt:
+            board.archivedAt ||
+            new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+          archivedBy: board.archivedBy || dbUser.name,
         }));
 
-      // Add some simulated bookmarked tasks
-      const bookmarkedTasks = boards
-        .flatMap(
-          (board: any) =>
-            board.lists?.flatMap(
-              (list: any) =>
-                list.tasks?.slice(0, 1).map((task: any) => ({
-                  ...task,
-                  boardTitle: board.title,
-                  listTitle: list.title,
-                  bookmarkedAt: new Date(
-                    Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
-                  ),
+      var bookmarkedTasks = boards.flatMap(
+        (board: any) =>
+          board.lists?.flatMap(
+            (list: any) =>
+              list.tasks
+                ?.filter((task: any) => task.isBookMarked)
+                .map((task: any) => ({
+                  createdAt: task.createdAt || new Date(),
+                  description: task.description || "Archived task",
+                  id: task.id,
+                  isArchived: task.isArchived,
+                  isBookMarked: task.isBookMarked || false,
+                  owner: {
+                    id: task.owner?.id,
+                    ownerId: task.owner?.ownerId,
+                    title: task.owner?.title,
+                  },
+                  title: task.title,
                   type: "task",
+                  boardTitle: board.title,
+                  boardId: board.id,
+                  listTitle: list.title,
+                  archivedAt:
+                    task.archivedAt ||
+                    new Date(
+                      Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+                    ),
+                  archivedBy: task.archivedBy || dbUser.name,
                 })) || []
-            ) || []
-        )
-        .slice(0, 2);
+          ) || []
+      );
 
       setBookmarks([...bookmarkedBoards, ...bookmarkedTasks]);
     } catch (error) {
@@ -81,9 +107,20 @@ export default function BookmarksPage() {
     }
   };
 
-  const handleRemoveBookmark = async (bookmarkId: string) => {
+  const handleRemoveBookmark = async (
+    bookmarkId: string,
+    bookmarkType: string
+  ) => {
     try {
-      // In a real app, you'd call an API to remove the bookmark
+      bookmarkType === "board"
+        ? await boardsAPI.bookMarkBoard(bookmarkId, {
+            isBookMarked: false,
+            userId: dbUser.id,
+          })
+        : await tasksAPI.bookMarkTask(bookmarkId, {
+            isBookMarked: false,
+            userId: dbUser.id,
+          });
       setBookmarks((prev) =>
         prev.filter((bookmark) => bookmark.id !== bookmarkId)
       );
@@ -210,7 +247,9 @@ export default function BookmarksPage() {
                     <div className="flex items-center space-x-1">
                       <Star className="w-4 h-4 text-yellow-400 fill-current" />
                       <button
-                        onClick={() => handleRemoveBookmark(bookmark.id)}
+                        onClick={() =>
+                          handleRemoveBookmark(bookmark.id, bookmark.type)
+                        }
                         className="text-gray-400 hover:text-red-500 p-1 rounded opacity-0 group-hover:opacity-100 transition-all"
                       >
                         <BookmarkX size={14} />
@@ -262,9 +301,11 @@ export default function BookmarksPage() {
                       to={
                         bookmark.type === "board"
                           ? `/boards/${bookmark.id}`
-                          : `/boards/${
-                              bookmark.list?.boardId || bookmark.boardId
-                            }?task=${bookmark.id}`
+                          : `/boards/${bookmark.boardId}`
+                      }
+                      onClick={() =>
+                        bookmark.type === "task" &&
+                        localStorage.setItem("taskId", bookmark.id)
                       }
                       className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
                     >
@@ -288,8 +329,8 @@ export default function BookmarksPage() {
                 ? `No bookmarks match "${searchQuery}". Try a different search term.`
                 : "Start bookmarking boards and tasks for quick access later."}
             </p>
-            <Button onClick={() => window.history.back()}>
-              Go Back to Boards
+            <Button onClick={() => navigate("/dashboard")}>
+              Go Back to Dashboard
             </Button>
           </CardContent>
         </Card>

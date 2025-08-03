@@ -1,11 +1,15 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.SOCKET_CORS_ORIGIN
-  ? `${import.meta.env.SOCKET_CORS_ORIGIN}/api`
-  : "https://tasknest01.onrender.com/api";
+// const API_BASE_URL = import.meta.env.SOCKET_CORS_ORIGIN
+//   ? `${import.meta.env.SOCKET_CORS_ORIGIN}/api`
+//   : "https://tasknest01.onrender.com/api";
+const API_BASE_URL = "http://localhost:3000/api";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 // Auth API
@@ -38,6 +42,16 @@ export const boardsAPI = {
 
   createBoard: (boardData: any) => api.post("/boards", boardData),
 
+  archiveBoard: (
+    boardId: string,
+    data: { isArchived: boolean; userId: string }
+  ) => api.put(`/boards/${boardId}/archive`, data),
+
+  bookMarkBoard: (
+    boardId: string,
+    data: { isBookMarked: boolean; userId: string }
+  ) => api.put(`/boards/${boardId}/bookmark`, data),
+
   updateBoard: (boardId: string, data: any) =>
     api.put(`/boards/${boardId}`, data),
 
@@ -55,11 +69,31 @@ export const boardsAPI = {
   createList: (boardId: string, listData: any) =>
     api.post(`/boards/${boardId}/lists`, listData),
 
+  getList: (listId: string) => api.get(`/boards/${listId}/list`),
+
   updateList: (boardId: string, listId: string, data: any) =>
     api.put(`/boards/${boardId}/lists/${listId}`, data),
 
   deleteList: (boardId: string, listId: string) =>
     api.delete(`/boards/${boardId}/lists/${listId}`),
+
+  archiveList: (
+    boardId: string,
+    listId: string,
+    data: {
+      isArchived: boolean;
+      userId: string;
+    }
+  ) => api.put(`/boards/${boardId}/lists/${listId}/archive`, data),
+
+  // bookMarkList: (
+  //   boardId: string,
+  //   listId: string,
+  //   data: {
+  //     isBookMarked: boolean;
+  //     userId: any;
+  //   }
+  // ) => api.put(`/boards/${boardId}/lists/${listId}/bookmark`, data),
 
   createLabel: (boardId: string, labelData: any) =>
     api.post(`/boards/${boardId}/labels`, labelData),
@@ -79,6 +113,16 @@ export const tasksAPI = {
 
   deleteTask: (taskId: string) => api.delete(`/tasks/${taskId}`),
 
+  archiveTask: (
+    taskId: string,
+    data: { isArchived: boolean; userId: string }
+  ) => api.put(`/tasks/${taskId}/archive`, data),
+
+  bookMarkTask: (
+    taskId: string,
+    data: { isBookMarked: boolean; userId: string }
+  ) => api.put(`/tasks/${taskId}/bookmark`, data),
+
   addComment: (taskId: string, commentData: any) =>
     api.post(`/tasks/${taskId}/comments`, commentData),
 
@@ -95,8 +139,6 @@ export const tasksAPI = {
     api.put(`/tasks/${taskId}/move`, data),
 
   duplicateTask: (taskId: string) => api.post(`/tasks/${taskId}/duplicate`),
-
-  archiveTask: (taskId: string) => api.put(`/tasks/${taskId}/archive`),
 };
 
 // AI API

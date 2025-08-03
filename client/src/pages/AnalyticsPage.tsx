@@ -44,6 +44,7 @@ export default function AnalyticsPage() {
   useEffect(() => {
     loadAnalytics();
   }, [timeRange, dbUser]);
+  console.log(analytics);
 
   const loadAnalytics = async () => {
     if (!dbUser) return;
@@ -260,10 +261,17 @@ export default function AnalyticsPage() {
           },
           {
             title: "Completion Rate",
-            value: `${Math.round(analytics.overview.assignedCompletionRate)}%`,
+            value: `${Math.round(
+              (analytics.overview.createdCompletionRate +
+                analytics.overview.assignedCompletionRate) /
+                2
+            )}%`,
             icon: <PieChartIcon size={20} />,
             change:
-              analytics.overview.assignedCompletionRate > 0 ? "+5%" : "No data",
+              analytics.overview.assignedCompletionRate &&
+              analytics.overview.createdCompletionRate > 0
+                ? "+5%"
+                : "No data",
             changeType: "increase",
             color: "text-secondary-600 dark:text-secondary-400",
           },
@@ -271,7 +279,11 @@ export default function AnalyticsPage() {
             title: "Created Tasks",
             value: analytics.overview.createdTasks.toString(),
             icon: <TrendingUp size={20} />,
-            change: analytics.overview.createdTasks > 0 ? "+8" : "No data",
+            change:
+              analytics.overview.createdTasks &&
+              analytics.overview.assignedCompletionRate > 0
+                ? "+8"
+                : "No data",
             changeType: "increase",
             color: "text-accent-600 dark:text-accent-400",
           },

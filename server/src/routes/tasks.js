@@ -122,7 +122,10 @@ const taskRoutes = async (fastify) => {
         completed,
         assigneeIds,
         labelIds,
+        id,
+        isArchived, // Destructured but will be validated
       } = request.body;
+
       // Get current task to check for list change
       const currentTask = await prisma.task.findUnique({
         where: { id: taskId },
@@ -138,6 +141,16 @@ const taskRoutes = async (fastify) => {
       if (!currentTask) {
         reply.status(404).send({ error: "Task not found" });
         return;
+      }
+
+      // Validate and process isArchived
+      let updatedIsArchived = currentTask.isArchived; // Default to current value
+      if (isArchived !== undefined) {
+        if (typeof isArchived !== "boolean") {
+          reply.status(400).send({ error: "isArchived must be a boolean" });
+          return;
+        }
+        updatedIsArchived = isArchived; // Update only if provided and valid
       }
 
       // Update assignees if provided
@@ -166,6 +179,11 @@ const taskRoutes = async (fastify) => {
         }
       }
 
+      if (id) {
+        console.log("You used the localStorage right?");
+      }
+
+      // Perform the task update
       const task = await prisma.task.update({
         where: { id: taskId },
         data: {
@@ -178,6 +196,7 @@ const taskRoutes = async (fastify) => {
           }),
           ...(priority && { priority }),
           ...(completed !== undefined && { completed }),
+          isArchived: updatedIsArchived, // Explicitly set the validated isArchived
         },
         include: {
           assignees: {
@@ -246,13 +265,26 @@ const taskRoutes = async (fastify) => {
         });
       }
 
+      // Create activity for archiving if changed
+      if (updatedIsArchived !== currentTask.isArchived) {
+        await prisma.activity.create({
+          data: {
+            type: "TASK_ARCHIVED",
+            data: { taskTitle: task.title, isArchived: updatedIsArchived },
+            boardId: task.list.board.id,
+            taskId: task.id,
+            userId: currentTask.createdById,
+          },
+        });
+      }
+
       // Emit real-time update
       // io.to(`board-${task.list.board.id}`).emit("task-updated", { task });
 
       return { task };
     } catch (error) {
       fastify.log.error(error);
-      reply.status(500).send({ error: "Failed to update task" });
+      reply.status(400).send({ error: "Failed to update task" }); // Changed to 400 for validation errors
     }
   });
 
@@ -288,6 +320,61 @@ const taskRoutes = async (fastify) => {
     } catch (error) {
       fastify.log.error(error);
       reply.status(500).send({ error: "Failed to delete task" });
+    }
+  });
+
+  fastify.put("/:taskId/archive", async (request, reply) => {
+    try {
+      const { taskId } = request.params;
+      const { isArchived, userId } = request.body;
+
+      const task = await prisma.task.update({
+        where: { id: taskId },
+        data: {
+          isArchived: isArchived,
+          ...(isArchived && { archivedAt: new Date() }),
+        },
+      });
+
+      await prisma.activity.create({
+        data: {
+          type: "TASK_ARCHIVED",
+          taskId,
+          userId: userId,
+          data: request.body,
+        },
+      });
+      return { task };
+    } catch (error) {
+      fastify.log.error(error);
+      reply.status(500).send({ error: "Failed to archive task" });
+    }
+  });
+
+  fastify.put("/:taskId/bookmark", async (request, reply) => {
+    try {
+      const { taskId } = request.params;
+      const { isBookMarked, userId } = request.body;
+      const task = await prisma.task.update({
+        where: { id: taskId },
+        data: {
+          isBookMarked: isBookMarked,
+          ...(isBookMarked && { bookMarkedAt: new Date() }),
+        },
+      });
+
+      await prisma.activity.create({
+        data: {
+          type: "TASK_BOOKMARKED",
+          taskId,
+          userId: userId,
+          data: request.body,
+        },
+      });
+      return { task };
+    } catch (error) {
+      fastify.log.error(error);
+      reply.status(500).send({ error: "Failed to bookmark task" });
     }
   });
 

@@ -14,7 +14,6 @@ import {
   Monitor,
   Bell,
   Search,
-  Plus,
   HelpCircle,
   Bookmark,
   Users,
@@ -22,6 +21,7 @@ import {
   Archive,
   Zap,
   Target,
+  Activity,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useCurrentUser } from "../lib/auth";
@@ -31,6 +31,7 @@ import Button from "../components/ui/Button";
 import { boardsAPI } from "../lib/api";
 import { useBoardStore } from "../stores/useBoardStore";
 import { toast } from "sonner";
+import { useNotifications } from "../hooks/useNotification";
 
 const navItems = [
   {
@@ -52,6 +53,8 @@ export default function DashboardLayout() {
   const { logout } = useAuth0();
   const { user, dbUser } = useCurrentUser();
   const { boards, setBoards } = useBoardStore();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+    useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, setTheme, isDarkMode } = useTheme();
@@ -60,29 +63,6 @@ export default function DashboardLayout() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "New task assigned",
-      message: 'You have been assigned to "Update documentation"',
-      time: "2 min ago",
-      unread: true,
-    },
-    {
-      id: 2,
-      title: "Board invitation",
-      message: 'You were invited to join "Marketing Campaign"',
-      time: "1 hour ago",
-      unread: true,
-    },
-    {
-      id: 3,
-      title: "Task completed",
-      message: 'Sarah completed "Design review"',
-      time: "3 hours ago",
-      unread: false,
-    },
-  ]);
   const [recentBoards, setRecentBoards] = useState<any[]>([]);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
@@ -189,41 +169,11 @@ export default function DashboardLayout() {
     }
   };
 
-  const handleQuickAction = (action: string) => {
-    switch (action) {
-      case "create-board":
-        navigate("/dashboard");
-        // Trigger create board modal (would need to be implemented in Dashboard)
-        break;
-      case "create-task":
-        if (recentBoards.length > 0) {
-          navigate(`/boards/${recentBoards[0].id}`);
-        } else {
-          toast.info("Create a board first to add tasks");
-        }
-        break;
-      case "calendar":
-        toast.info("Calendar view coming soon!");
-        break;
-      case "ai-generate":
-        navigate("/dashboard");
-        break;
-    }
-  };
-
   const markNotificationAsRead = (notificationId: number) => {
-    setNotifications((prev) =>
-      prev.map((notif) =>
-        notif.id === notificationId ? { ...notif, unread: false } : notif
-      )
-    );
+    markAsRead(notificationId.toString());
   };
 
-  const markAllNotificationsAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((notif) => ({ ...notif, unread: false }))
-    );
-  };
+  const markAllNotificationsAsRead = markAllAsRead;
 
   // Close sidebar on mobile when route changes
   useEffect(() => {
@@ -256,8 +206,6 @@ export default function DashboardLayout() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
-
-  const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
@@ -444,48 +392,6 @@ export default function DashboardLayout() {
                     )}
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Quick Actions */}
-            {isSidebarOpen && (
-              <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-                <h3 className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium mb-3">
-                  Quick Actions
-                </h3>
-                <div className="space-y-1">
-                  {[
-                    {
-                      label: "New Board",
-                      icon: <Plus size={16} />,
-                      action: "create-board",
-                    },
-                    {
-                      label: "New Task",
-                      icon: <CheckSquare size={16} />,
-                      action: "create-task",
-                    },
-                    {
-                      label: "AI Generate",
-                      icon: <Zap size={16} />,
-                      action: "ai-generate",
-                    },
-                    {
-                      label: "Calendar",
-                      icon: <Calendar size={16} />,
-                      action: "calendar",
-                    },
-                  ].map((action, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleQuickAction(action.action)}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    >
-                      {action.icon}
-                      {action.label}
-                    </button>
-                  ))}
-                </div>
               </div>
             )}
 
@@ -765,11 +671,11 @@ export default function DashboardLayout() {
                       key={notification.id}
                       className={cn(
                         "p-3 rounded-lg border transition-colors cursor-pointer",
-                        notification.unread
+                        !notification.read
                           ? "bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800"
                           : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
                       )}
-                      onClick={() => markNotificationAsRead(notification.id)}
+                      onClick={() => markAsRead(notification.id)}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -780,10 +686,10 @@ export default function DashboardLayout() {
                             {notification.message}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            {notification.time}
+                            {getTimeAgo(notification.createdAt)}
                           </p>
                         </div>
-                        {notification.unread && (
+                        {!notification.read && (
                           <div className="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0 mt-1"></div>
                         )}
                       </div>
@@ -802,7 +708,6 @@ export default function DashboardLayout() {
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* Notifications overlay */}
       {showNotifications && (
         <div

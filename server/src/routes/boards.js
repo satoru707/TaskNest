@@ -66,6 +66,14 @@ const boardRoutes = async (fastify) => {
     }
   });
 
+  fastify.get("/:listId/list", (request, reply) => {
+    const { listId } = request.params;
+    const board = prisma.list.findUnique({
+      where: { id: listId },
+    });
+    return board;
+  });
+
   // Get a specific board
   fastify.get("/:boardId", async (request, reply) => {
     try {
@@ -302,6 +310,114 @@ const boardRoutes = async (fastify) => {
     } catch (error) {
       fastify.log.error(error);
       reply.status(500).send({ error: "Failed to add member" });
+    }
+  });
+
+  fastify.put("/:boardId/archive", async (request, reply) => {
+    try {
+      const { boardId } = request.params;
+      const { isArchived, userId } = request.body;
+      const board = await prisma.board.update({
+        where: { id: boardId },
+        data: {
+          isArchived: isArchived,
+          ...(isArchived && { archivedAt: new Date() }),
+        },
+      });
+
+      await prisma.activity.create({
+        data: {
+          type: "BOARD_ARCHIVED",
+          boardId,
+          userId: userId,
+          data: { isArchived },
+        },
+      });
+      return { board };
+    } catch (error) {
+      fastify.log.error(error);
+      reply.status(500).send({ error: "Failed to archive board" });
+    }
+  });
+
+  fastify.put("/:boardId/bookmark", async (request, reply) => {
+    try {
+      const { boardId } = request.params;
+      const { isBookMarked, userId } = request.body;
+      const board = await prisma.board.update({
+        where: { id: boardId },
+        data: {
+          isBookMarked: isBookMarked,
+          ...(isBookMarked && { bookMarkedAt: new Date() }),
+        },
+      });
+
+      await prisma.activity.create({
+        data: {
+          type: "BOARD_BOOKMARKED",
+          boardId,
+          userId: userId,
+          data: { isBookMarked },
+        },
+      });
+      return { board };
+    } catch (error) {
+      fastify.log.error(error);
+      reply.status(500).send({ error: "Failed to archive board" });
+    }
+  });
+
+  fastify.put("/:boardId/lists/:listId/archive", async (request, reply) => {
+    try {
+      const { boardId, listId } = request.params;
+      const { isArchived, userId } = request.body;
+      const list = await prisma.list.update({
+        where: { id: listId, boardId: boardId },
+        data: {
+          isArchived: isArchived,
+          ...(isArchived && { archivedAt: new Date() }),
+        },
+      });
+      console.log("SHould be working", boardId, listId, isArchived, userId);
+
+      await prisma.activity.create({
+        data: {
+          type: "LIST_ARCHIVED",
+          boardId,
+          userId: userId,
+          data: { isArchived },
+        },
+      });
+      return { list };
+    } catch (error) {
+      fastify.log.error(error);
+      reply.status(500).send({ error: "Failed to archive list" });
+    }
+  });
+
+  fastify.put("/:boardId/lists/:listId/bookmark", async (request, reply) => {
+    try {
+      const { boardId, listId } = request.params;
+      const { isBookMarked, userId } = request.body;
+      const list = await prisma.list.update({
+        where: { id: listId, boardId: boardId },
+        data: {
+          isBookMarked: isBookMarked,
+          ...(isBookMarked && { bookMarkedAt: new Date() }),
+        },
+      });
+
+      await prisma.activity.create({
+        data: {
+          type: "LIST_BOOKMARKED",
+          boardId,
+          userId: userId,
+        },
+      });
+      return { list };
+    } catch (err) {
+      fastify.log.error(error);
+      reply.status(500).send({ error: "Failed to bookmark list" });
     }
   });
 
