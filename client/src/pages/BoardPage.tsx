@@ -29,6 +29,7 @@ import {
   Bookmark,
   BookmarkCheck,
   Archive,
+  LogOut,
 } from "lucide-react";
 import Button from "../components/ui/Button";
 import KanbanList from "../components/board/KanbanList";
@@ -191,6 +192,25 @@ export default function BoardPage() {
       setLoading(false);
     }
   };
+
+  async function handleLeave() {
+    if (user?.sub) {
+      const confirm = window.confirm(
+        "Are you sure you want to leave the board?"
+      );
+      const userId = await authAPI.getProfile(user?.sub);
+
+      if (confirm) {
+        console.log(currentBoard.id, user.id);
+
+        await boardsAPI.removeMember(currentBoard.id, userId.data.user.id);
+        navigate("/dashboard");
+        toast.success("You have left the board");
+      } else {
+        toast.error("Error leaving board");
+      }
+    }
+  }
 
   const handleDragStart = (event: any) => {
     if (role == "VIEWER") return;
@@ -489,17 +509,13 @@ export default function BoardPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  if (role == "ADMIN") {
-                    setShowBoardMenu(!showBoardMenu);
-                  } else {
-                    toast.error("You are not allowed to perform this action");
-                  }
+                  setShowBoardMenu(!showBoardMenu);
                 }}
                 className="text-gray-600 dark:text-gray-300"
               >
                 <MoreHorizontal size={18} />
               </Button>
-              {showBoardMenu && (
+              {showBoardMenu && role == "ADMIN" ? (
                 <div className="absolute right-0 top-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px]">
                   <button
                     onClick={() => {
@@ -541,7 +557,16 @@ export default function BoardPage() {
                     <Star size={14} /> Export Board
                   </button>
                 </div>
-              )}
+              ) : showBoardMenu && role != "ADMIN" ? (
+                <div className="absolute right-0 top-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px]">
+                  <button
+                    onClick={handleLeave}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <LogOut size={14} /> Leave Board
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

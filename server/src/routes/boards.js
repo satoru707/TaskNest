@@ -6,58 +6,103 @@ const boardRoutes = async (fastify) => {
   fastify.get("/", async (request, reply) => {
     try {
       const { userId } = request.query;
-
-      const boards = await prisma.board.findMany({
-        where: {
-          OR: [
-            { ownerId: userId },
-            {
-              members: {
-                some: {
-                  userId,
-                },
+      var boards;
+      if (userId === "a") {
+        boards = await prisma.board.findMany({
+          where: {
+            OR: [{ isPublic: true }],
+          },
+          include: {
+            owner: true,
+            members: {
+              include: {
+                user: true,
               },
             },
-          ],
-        },
-        include: {
-          owner: true,
-          members: {
-            include: {
-              user: true,
-            },
-          },
-          lists: {
-            include: {
-              tasks: {
-                include: {
-                  assignees: {
-                    include: {
-                      user: true,
+            lists: {
+              include: {
+                tasks: {
+                  include: {
+                    assignees: {
+                      include: {
+                        user: true,
+                      },
                     },
-                  },
-                  labels: {
-                    include: {
-                      label: true,
+                    labels: {
+                      include: {
+                        label: true,
+                      },
                     },
                   },
                 },
               },
+              orderBy: {
+                position: "asc",
+              },
             },
-            orderBy: {
-              position: "asc",
+            _count: {
+              select: {
+                lists: true,
+              },
             },
           },
-          _count: {
-            select: {
-              lists: true,
+          orderBy: {
+            updatedAt: "desc",
+          },
+        });
+      } else {
+        boards = await prisma.board.findMany({
+          where: {
+            OR: [
+              { ownerId: userId, isPublic: true },
+              {
+                members: {
+                  some: {
+                    userId,
+                  },
+                },
+              },
+            ],
+          },
+          include: {
+            owner: true,
+            members: {
+              include: {
+                user: true,
+              },
+            },
+            lists: {
+              include: {
+                tasks: {
+                  include: {
+                    assignees: {
+                      include: {
+                        user: true,
+                      },
+                    },
+                    labels: {
+                      include: {
+                        label: true,
+                      },
+                    },
+                  },
+                },
+              },
+              orderBy: {
+                position: "asc",
+              },
+            },
+            _count: {
+              select: {
+                lists: true,
+              },
             },
           },
-        },
-        orderBy: {
-          updatedAt: "desc",
-        },
-      });
+          orderBy: {
+            updatedAt: "desc",
+          },
+        });
+      }
 
       return { boards };
     } catch (error) {

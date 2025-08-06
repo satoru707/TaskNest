@@ -219,7 +219,7 @@ export default function Dashboard() {
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Welcome back, {dbUser?.name?.split(" ")[0] || "there"}! 👋
+            Welcome, {dbUser?.name?.split(" ")[0] || "there"}! 👋
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mt-2">
             {boards.length > 0
@@ -530,7 +530,10 @@ confirm &&
                                 <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                                   <Users size={16} className="mr-1" />
                                   <span>
-                                    {board.members?.length || 0} members
+                                    {board.members?.length + 1 || 0}{" "}
+                                    {board.members?.length + 1 === 1
+                                      ? "member"
+                                      : "members"}
                                   </span>
                                 </div>
                                 <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">

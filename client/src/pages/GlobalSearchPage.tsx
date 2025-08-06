@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../lib/auth";
-import { useBoardStore } from "../stores/useBoardStore";
 import {
   Card,
   CardHeader,
@@ -11,7 +10,9 @@ import {
 import Button from "../components/ui/Button";
 import { Search, Users, Plus } from "lucide-react";
 import { cn } from "../utils/cn";
+import { boardsAPI } from "../lib/api";
 import { toast } from "sonner";
+import { get } from "http";
 
 interface Board {
   id: string;
@@ -25,10 +26,15 @@ interface Board {
   }[];
 }
 
+async function getAll() {
+  const boards = await boardsAPI.getBoards("a");
+  return boards.data.boards;
+}
+
 export default function SearchPage() {
   const { dbUser } = useCurrentUser();
   const navigate = useNavigate();
-  const { boards } = useBoardStore();
+  const [boards, setBoards] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -45,6 +51,19 @@ export default function SearchPage() {
       return;
     }
   }, [dbUser, boards]);
+
+  useEffect(() => {
+    const fetchBoards = async () => {
+      try {
+        const data = await getAll();
+        setBoards(data);
+      } catch (error) {
+        console.error("Error fetching boards:", error);
+      }
+    };
+
+    fetchBoards();
+  }, []);
 
   // Search functionality (triggered only when query is non-empty)
   useEffect(() => {
@@ -76,28 +95,6 @@ export default function SearchPage() {
             path: `/boards/${board.id}`,
           });
         }
-
-        // Search tasks within public boards
-        board.lists?.forEach((list) => {
-          list.tasks?.forEach((task) => {
-            if (
-              task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              task.description
-                ?.toLowerCase()
-                .includes(searchQuery.toLowerCase())
-            ) {
-              results.push({
-                type: "task",
-                id: task.id,
-                title: task.title,
-                description: task.description,
-                boardTitle: board.title,
-                listTitle: list.title,
-                path: `/boards/${board.id}?task=${task.id}`,
-              });
-            }
-          });
-        });
       });
 
       setSearchResults(results.slice(0, 10)); // Limit to 10 results
@@ -114,16 +111,21 @@ export default function SearchPage() {
   };
 
   const confirmJoinBoard = async () => {
+    console.log(showJoinConfirm, dbUser);
+
     if (!showJoinConfirm || !dbUser) return;
 
     const confirmed = window.confirm(
       `Are you sure you want to join "${showJoinConfirm.title}" as a viewer?`
     );
-    if (confirmed) {
+    if (confirmed && showJoinConfirm.boardId) {
       try {
         // Assume joinBoard API call (placeholder, replace with actual API)
-        // await boardsAPI.joinBoard(dbUser.id, showJoinConfirm.boardId, { role: "VIEWER" });
-        toast.success(`Joined "${showJoinConfirm.title}" as a viewer!`);
+        await boardsAPI.addMember(showJoinConfirm.boardId, {
+          role: "VIEWER",
+          userId: dbUser.id,
+        });
+        toast.success(`${showJoinConfirm.title} joined as a viewer!`);
         navigate(`/boards/${showJoinConfirm.boardId}`);
       } catch (error: any) {
         console.error("Error joining board:", error);
@@ -221,12 +223,14 @@ export default function SearchPage() {
       )}
 
       {showJoinConfirm && (
-        <div className="fixed inset-0 flex items-center justify-center z-100">
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          {/* Dark overlay */}
           <div
-            className="fixed inset-0 bg-black/40 z-90"
+            className="fixed inset-0 bg-black/40 z-40"
             onClick={() => setShowJoinConfirm(null)}
           />
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-6 max-w-md w-full z-100">
+          {/* Modal content */}
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-6 max-w-md w-full z-50 relative">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Join Board
             </h3>
