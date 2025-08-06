@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL = `${
-  import.meta.env.SOCKET_CORS_ORIGIN || "htts://tasknest01.onrender.com"
+  import.meta.env.SOCKET_CORS_ORIGIN || "https://tasknest01.onrender.com"
 }/api`;
 export const api = axios.create({
   baseURL: API_BASE_URL,
