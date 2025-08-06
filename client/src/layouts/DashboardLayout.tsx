@@ -234,30 +234,6 @@ export default function DashboardLayout() {
                 <>
                   <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
                     <h3 className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium mb-3">
-                      Recent Boards
-                    </h3>
-                    <div className="space-y-1">
-                      {recentBoards.length > 0 ? (
-                        recentBoards.map((board) => (
-                          <button
-                            key={board.id}
-                            onClick={() => navigate(`/boards/${board.id}`)}
-                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-left"
-                          >
-                            <Target size={16} />
-                            <span className="truncate">{board.title}</span>
-                          </button>
-                        ))
-                      ) : (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 px-3 py-2">
-                          No recent boards
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
-                    <h3 className="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium mb-3">
                       Workspace
                     </h3>
                     <div className="space-y-1">

@@ -129,7 +129,28 @@ export default function BoardPage() {
   useEffect(() => {
     if (boardId) loadBoard();
   }, [boardId]);
+  useEffect(() => {
+    if (boardId) loadBoard();
 
+    if (currentBoard && user?.sub) {
+      const userId = authAPI.getProfile(user.sub);
+      userId
+        .then((id) => {
+          const isMember = currentBoard.members.some(
+            (member: any) => member.user.auth0Id === id.data.user.auth0Id
+          );
+          if (!isMember || role !== "ADMIN") {
+            toast.error("You are not authorized to view this board.");
+            navigate("/dashboard");
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching user profile:", error);
+          toast.error("Failed to verify your access.");
+          navigate("/dashboard");
+        });
+    }
+  }, [boardId]);
   const handleBoardBookmark = async () => {
     if (!currentBoard) return;
 
@@ -169,18 +190,13 @@ export default function BoardPage() {
     try {
       const response = await boardsAPI.getBoard(boardId);
       setCurrentBoard(response.data.board);
-      // console.log(response.data.board);
       const id = await authAPI.getProfile(user?.sub);
       console.log(id);
 
       //overhere nigga
       for (const member of response.data.board.members) {
-        // console.log(member.user.auth0Id);
-
         if (id.data.user.auth0Id == member.user.auth0Id) {
-          // console.log(user?.sub, member.user);
           setRole(member.role);
-          // console.log(member.role);
         }
       }
 
@@ -206,8 +222,6 @@ export default function BoardPage() {
         await boardsAPI.removeMember(currentBoard.id, userId.data.user.id);
         navigate("/dashboard");
         toast.success("You have left the board");
-      } else {
-        toast.error("Error leaving board");
       }
     }
   }
