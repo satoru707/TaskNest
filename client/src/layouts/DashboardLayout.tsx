@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
   LayoutDashboard,
-  CheckSquare,
   BarChart,
   Settings,
   LogOut,
@@ -13,25 +12,19 @@ import {
   Moon,
   Monitor,
   Bell,
-  Search,
   HelpCircle,
   Bookmark,
   Users,
-  Calendar,
   Archive,
-  Zap,
   Target,
-  Activity,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useCurrentUser } from "../lib/auth";
 import { cn } from "../utils/cn";
 import { motion, AnimatePresence } from "framer-motion";
-import Button from "../components/ui/Button";
 import { boardsAPI } from "../lib/api";
-import { useBoardStore } from "../stores/useBoardStore";
 import { toast } from "sonner";
-import { useNotifications } from "../hooks/useNotification";
+import { useNotifications } from "../hooks/useNotifications";
 
 const navItems = [
   {
@@ -52,23 +45,32 @@ const workspaceItems = [
 export default function DashboardLayout() {
   const { logout } = useAuth0();
   const { user, dbUser } = useCurrentUser();
-  const { boards, setBoards } = useBoardStore();
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
     useNotifications();
   const navigate = useNavigate();
-  const location = useLocation();
   const { theme, setTheme, isDarkMode } = useTheme();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [recentBoards, setRecentBoards] = useState<any[]>([]);
-  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
   const handleLogout = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
   };
+
+  useEffect(() => {
+    const loadBoards = async () => {
+      if (!dbUser) return;
+
+      try {
+        const response = await boardsAPI.getBoards(dbUser.id);
+        setRecentBoards(response.data.boards.slice(0, 5));
+      } catch (error) {
+        console.error("Error loading boards:", error);
+      }
+    };
+
+    loadBoards();
+  }, [dbUser]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -78,134 +80,11 @@ export default function DashboardLayout() {
     setTheme(newTheme);
   };
 
-  // Load boards for search and recent boards
-  useEffect(() => {
-    const loadBoards = async () => {
-      if (!dbUser) return;
-
-      try {
-        const response = await boardsAPI.getBoards(dbUser.id);
-        setBoards(response.data.boards);
-        setRecentBoards(response.data.boards.slice(0, 5));
-      } catch (error) {
-        console.error("Error loading boards:", error);
-      }
-    };
-
-    loadBoards();
-  }, [dbUser, setBoards]);
-
-  // Search functionality
-  useEffect(() => {
-    const performSearch = async () => {
-      if (!searchQuery.trim()) {
-        setSearchResults([]);
-        setShowSearchResults(false);
-        return;
-      }
-
-      setIsLoadingSearch(true);
-      try {
-        // Search through boards and tasks
-        const results: any[] = [];
-
-        boards.forEach((board) => {
-          // Search board titles and descriptions
-          if (
-            board.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            board.description?.toLowerCase().includes(searchQuery.toLowerCase())
-          ) {
-            results.push({
-              type: "board",
-              id: board.id,
-              title: board.title,
-              description: board.description,
-              path: `/boards/${board.id}`,
-            });
-          }
-
-          // Search tasks within boards
-          board.lists?.forEach((list: any) => {
-            list.tasks?.forEach((task: any) => {
-              if (
-                task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                task.description
-                  ?.toLowerCase()
-                  .includes(searchQuery.toLowerCase())
-              ) {
-                results.push({
-                  type: "task",
-                  id: task.id,
-                  title: task.title,
-                  description: task.description,
-                  boardTitle: board.title,
-                  listTitle: list.title,
-                  path: `/boards/${board.id}?task=${task.id}`,
-                });
-              }
-            });
-          });
-        });
-
-        setSearchResults(results.slice(0, 10)); // Limit to 10 results
-        setShowSearchResults(true);
-      } catch (error) {
-        console.error("Search error:", error);
-      } finally {
-        setIsLoadingSearch(false);
-      }
-    };
-
-    const debounceTimer = setTimeout(performSearch, 300);
-    return () => clearTimeout(debounceTimer);
-  }, [searchQuery, boards]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchResults.length > 0) {
-      navigate(searchResults[0].path);
-      setSearchQuery("");
-      setShowSearchResults(false);
-    }
-  };
-
   const markNotificationAsRead = (notificationId: number) => {
     markAsRead(notificationId.toString());
   };
 
   const markAllNotificationsAsRead = markAllAsRead;
-
-  // Close sidebar on mobile when route changes
-  useEffect(() => {
-    if (window.innerWidth < 768) {
-      setIsSidebarOpen(false);
-    }
-  }, [location.pathname]);
-
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey) {
-        switch (e.key) {
-          case "k":
-            e.preventDefault();
-            document.getElementById("search-input")?.focus();
-            break;
-          case "b":
-            e.preventDefault();
-            toggleSidebar();
-            break;
-        }
-      }
-      if (e.key === "Escape") {
-        setShowSearchResults(false);
-        setShowNotifications(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
@@ -317,83 +196,6 @@ export default function DashboardLayout() {
                 {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             </div>
-
-            {/* Search */}
-            {isSidebarOpen && (
-              <div className="p-4 border-b border-gray-100 dark:border-gray-700 relative">
-                <form onSubmit={handleSearch} className="relative">
-                  <Search
-                    size={16}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  />
-                  <input
-                    id="search-input"
-                    type="text"
-                    placeholder="Search... (⌘K)"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => searchQuery && setShowSearchResults(true)}
-                    className="w-full pl-10 pr-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                  />
-                </form>
-
-                {/* Search Results */}
-                {showSearchResults && (
-                  <div className="absolute top-full left-4 right-4 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
-                    {isLoadingSearch ? (
-                      <div className="p-4 text-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
-                      </div>
-                    ) : searchResults.length > 0 ? (
-                      <div className="py-2">
-                        {searchResults.map((result, index) => (
-                          <button
-                            key={`${result.type}-${result.id}`}
-                            onClick={() => {
-                              navigate(result.path);
-                              setSearchQuery("");
-                              setShowSearchResults(false);
-                            }}
-                            className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div
-                                className={cn(
-                                  "w-8 h-8 rounded-lg flex items-center justify-center",
-                                  result.type === "board"
-                                    ? "bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
-                                    : "bg-secondary-100 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400"
-                                )}
-                              >
-                                {result.type === "board" ? (
-                                  <LayoutDashboard size={16} />
-                                ) : (
-                                  <CheckSquare size={16} />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                  {result.title}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                  {result.type === "board"
-                                    ? result.description || "Board"
-                                    : `${result.boardTitle} • ${result.listTitle}`}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
-                        No results found for "{searchQuery}"
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Navigation Links */}
             <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -623,14 +425,6 @@ export default function DashboardLayout() {
         />
       )}
 
-      {/* Search Results Overlay */}
-      {showSearchResults && (
-        <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-          onClick={() => setShowSearchResults(false)}
-        />
-      )}
-
       {/* Notifications Panel */}
       <AnimatePresence>
         {showNotifications && (
@@ -685,9 +479,9 @@ export default function DashboardLayout() {
                           <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                             {notification.message}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          {/* <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                             {getTimeAgo(notification.createdAt)}
-                          </p>
+                          </p> */}
                         </div>
                         {!notification.read && (
                           <div className="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0 mt-1"></div>

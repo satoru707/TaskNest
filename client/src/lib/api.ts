@@ -1,9 +1,9 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.SOCKET_CORS_ORIGIN
-  ? `${import.meta.env.SOCKET_CORS_ORIGIN}/api`
-  : "https://tasknest01.onrender.com/api";
-// const API_BASE_URL = "http://localhost:3000/api";
+// const API_BASE_URL = import.meta.env.SOCKET_CORS_ORIGIN
+//   ? `${import.meta.env.SOCKET_CORS_ORIGIN}/api`
+//   : "https://tasknest01.onrender.com/api";
+const API_BASE_URL = "http://localhost:3000/api";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -162,39 +162,19 @@ export const aiAPI = {
     api.post("/ai/estimate-time", data),
 };
 
-// Uploads API
-export const uploadsAPI = {
-  uploadAttachment: (formData: FormData) =>
-    api.post("/uploads/attachments", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }),
-
-  deleteAttachment: (attachmentId: string) =>
-    api.delete(`/uploads/attachments/${attachmentId}`),
-
-  uploadAvatar: (formData: FormData) =>
-    api.post("/uploads/avatar", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }),
-
-  uploadBoardBackground: (boardId: string, formData: FormData) =>
-    api.post(`/uploads/board/${boardId}/background`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }),
-};
-
 // Analytics API
 export const analyticsAPI = {
   getBoardAnalytics: (boardId: string) =>
     api.get(`/analytics/boards/${boardId}`),
 
-  getUserAnalytics: (userId: string) => api.get(`/analytics/users/${userId}`),
+  getUserAnalytics: (
+    userId: string,
+    data: {
+      timeRange: string;
+      priorityFilter: string | null;
+      statusFilter: string | null;
+    }
+  ) => api.post(`/analytics/users/${userId} `, data),
 
   getGlobalAnalytics: () => api.get("/analytics/global"),
 

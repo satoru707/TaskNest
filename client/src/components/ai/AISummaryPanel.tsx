@@ -15,12 +15,14 @@ interface AISummaryPanelProps {
   board: any;
   isVisible: boolean;
   onClose: () => void;
+  role: string;
 }
 
 export default function AISummaryPanel({
   board,
   isVisible,
   onClose,
+  role,
 }: AISummaryPanelProps) {
   const [summary, setSummary] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -189,15 +191,17 @@ export default function AISummaryPanel({
               </Card>
             )}
 
-            <Button
-              onClick={generateSummary}
-              variant="outline"
-              size="sm"
-              className="w-full"
-              icon={<Brain size={16} />}
-            >
-              Refresh Insights
-            </Button>
+            {role == "ADMIN" && (
+              <Button
+                onClick={generateSummary}
+                variant="outline"
+                size="sm"
+                className="w-full"
+                icon={<Brain size={16} />}
+              >
+                Refresh Insights
+              </Button>
+            )}
           </div>
         ) : (
           <div className="text-center py-12">

@@ -12,7 +12,7 @@ import {
 import { format } from "date-fns";
 import Button from "../ui/Button";
 // import { Card, CardContent } from "../ui/Card";
-import { tasksAPI, uploadsAPI } from "../../lib/api";
+import { tasksAPI } from "../../lib/api";
 import { toast } from "sonner";
 import { cn } from "../../utils/cn";
 import { useAuth0WithUser as useAuth0 } from "../../hooks/useAuth0withUser";
@@ -25,6 +25,7 @@ interface TaskModalProps {
   boardMembers: any[];
   boardLabels: any[];
   refresh: () => void;
+  role: string;
 }
 
 export default function TaskModal({
@@ -35,6 +36,7 @@ export default function TaskModal({
   boardMembers,
   boardLabels,
   refresh,
+  role,
 }: TaskModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(task?.title || "");
@@ -52,7 +54,6 @@ export default function TaskModal({
   const [newComment, setNewComment] = useState("");
   const [newChecklistItem, setNewChecklistItem] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const { user } = useAuth0();
 
   useEffect(() => {
@@ -81,8 +82,12 @@ export default function TaskModal({
         assigneeIds: selectedAssignees,
         labelIds: selectedLabels,
       };
+      console.log(task.id, updates);
 
-      const response = await tasksAPI.updateTask(task.id, updates);
+      const response = await tasksAPI.updateTask(
+        task.id.split("-")[1],
+        updates
+      );
       onUpdate(task.id, response.data.task);
       setIsEditing(false);
       toast.success("Task updated successfully");
@@ -99,7 +104,7 @@ export default function TaskModal({
     // console.log("COmment", newComment);
 
     try {
-      await tasksAPI.addComment(task.id, {
+      await tasksAPI.addComment(task.id.split("-")[1], {
         content: newComment,
         userId: user?.sub,
       });
@@ -117,7 +122,7 @@ export default function TaskModal({
     if (!newChecklistItem.trim()) return;
 
     try {
-      await tasksAPI.addChecklistItem(task.id, {
+      await tasksAPI.addChecklistItem(task.id.split("-")[1], {
         title: newChecklistItem,
         position: task.checklistItems?.length || 0,
       });
@@ -135,8 +140,11 @@ export default function TaskModal({
     itemId: string,
     completed: boolean
   ) => {
+    if (role == "VIEWER") return;
     try {
-      await tasksAPI.updateChecklistItem(task.id, itemId, { completed });
+      await tasksAPI.updateChecklistItem(task.id.split("-")[1], itemId, {
+        completed,
+      });
       toast.success("Checklist item updated");
       // Refresh task data
       refresh();
@@ -146,36 +154,13 @@ export default function TaskModal({
     }
   };
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    console.log(file);
-
-    if (!file) return;
-
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("taskId", task.id);
-      formData.append("uploadedById", user?.sub);
-
-      await uploadsAPI.uploadAttachment(formData);
-      toast.success("File uploaded successfully");
-      // Refresh task data
-      refresh();
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      toast.error("Failed to upload file");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
   async function handleDeleteTask() {
+    if (role == "VIEWER") {
+      toast.error("You don't have permission to delete tasks");
+      return;
+    }
     try {
-      await tasksAPI.deleteTask(task.id);
+      await tasksAPI.deleteTask(task.id.split("-")[1]);
       toast.success("Task deleted successfully");
       refresh();
     } catch (error) {
@@ -243,7 +228,15 @@ export default function TaskModal({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setIsEditing(true)}
+                      onClick={() => {
+                        if (role == "VIEWER") {
+                          toast.error(
+                            "You don't have permission to edit tasks"
+                          );
+                          return;
+                        }
+                        setIsEditing(true);
+                      }}
                       icon={<Edit2 size={16} />}
                     >
                       Edit
@@ -394,61 +387,6 @@ export default function TaskModal({
                     icon={<Plus size={16} />}
                   >
                     Add
-                  </Button>
-                </div>
-              </div>
-
-              {/* Attachments */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Attachments
-                </h3>
-
-                {task.attachments && task.attachments.length > 0 && (
-                  <div className="space-y-2 mb-3">
-                    {task.attachments.map((attachment: any) => (
-                      <div
-                        key={attachment.id}
-                        className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-md"
-                      >
-                        <Paperclip size={16} className="text-gray-400" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {attachment.originalName}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {(attachment.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-gray-400 hover:text-red-500"
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div>
-                  <input
-                    type="file"
-                    id="file-upload"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      document.getElementById("file-upload")?.click()
-                    }
-                    isLoading={isUploading}
-                    icon={<Paperclip size={16} />}
-                  >
-                    Attach File
                   </Button>
                 </div>
               </div>

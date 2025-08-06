@@ -11,7 +11,6 @@ A collaborative task management platform that combines Trello's Kanban boards, N
 - **⚡ Real-time Collaboration**: Live updates with Socket.IO
 - **👥 Role-Based Access**: Admin, Editor, and Viewer permissions
 - **📊 Analytics Dashboard**: Track productivity and project metrics
-- **📎 File Attachments**: Upload and manage files with tasks
 - **🔐 Secure Authentication**: Auth0 integration with social logins
 - **🌙 Dark/Light Mode**: Beautiful UI with theme switching
 - **📱 Responsive Design**: Works on all devices
@@ -71,9 +70,6 @@ GEMINI_API_KEY="your-gemini-api-key"
 PORT=3000
 NODE_ENV="development"
 
-# File Upload
-UPLOAD_DIR="./uploads"
-MAX_FILE_SIZE=10485760
 
 # Socket.IO
 SOCKET_CORS_ORIGIN="http://localhost:5173"
@@ -224,27 +220,6 @@ Update your `.env`:
 ```env
 DATABASE_URL="your-cloud-database-url"
 ```
-
-## 📁 File Upload Configuration
-
-### Local Storage (Default)
-
-Files are stored in the `./uploads` directory by default:
-
-```env
-UPLOAD_DIR="./uploads"
-MAX_FILE_SIZE=10485760  # 10MB in bytes
-```
-
-### Cloud Storage (Production)
-
-For production, consider using cloud storage services:
-
-- **AWS S3**
-- **Google Cloud Storage**
-- **Cloudinary**
-
-Update the upload routes in `server/routes/uploads.ts` to integrate with your chosen service.
 
 ## 🌐 Deployment
 

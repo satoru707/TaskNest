@@ -68,9 +68,16 @@ export default function Dashboard() {
       if (boardsResponse.data.boards.length > 0) {
         try {
           const analyticsResponse = await analyticsAPI.getUserAnalytics(
-            dbUser.id
+            dbUser.id,
+            {
+              timeRange: "all",
+              priorityFilter: null,
+              statusFilter: null,
+            }
           );
-          setAnalytics(analyticsResponse.data);
+          console.log(analyticsResponse.data);
+
+          setAnalytics(analyticsResponse.data.recentActivities);
           setRecentActivity(analyticsResponse.data.recentActivities || []);
         } catch (analyticsError) {
           console.warn("Analytics not available:", analyticsError);
@@ -351,6 +358,12 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
+      {/*       
+  {
+confirm && 
+
+
+  } */}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Boards Section */}
@@ -712,9 +725,9 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {recentActivity.length > 0 ? (
+              {analytics?.length > 0 ? (
                 <div className="space-y-4">
-                  {recentActivity.slice(0, 5).map((activity: any, index) => (
+                  {analytics.slice(0, 5).map((activity: any, index) => (
                     <motion.div
                       key={activity.id}
                       initial={{ opacity: 0, x: 20 }}

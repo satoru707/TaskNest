@@ -35,6 +35,7 @@ import KanbanList from "../components/board/KanbanList";
 import KanbanCard from "../components/board/KanbanCard";
 import TaskModal from "../components/board/TaskModal";
 import CreateTaskModal from "../components/board/CreateTaskModal";
+// import MemberListComponent from "../components/board/MemberList";
 import CreateListModal from "../components/board/CreateListModal";
 import AddMemberModal from "../components/board/AddMemberModal";
 import AITaskGenerator from "../components/ai/AITaskGenerator";
@@ -47,6 +48,51 @@ import { toast } from "sonner";
 import { useAuth0WithUser as useAuth0 } from "../hooks/useAuth0withUser";
 import { useBookmarkStore } from "../stores/useBookMarkStore";
 
+// New Component to display members and roles
+const MemberListComponent = ({ members, onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Board Members
+        </h2>
+        <ul className="space-y-4 max-h-64 overflow-y-auto">
+          {members.map((member) => (
+            <li key={member.id} className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {member.user.avatar ? (
+                  <img
+                    src={member.user.avatar}
+                    alt={member.user.name}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium text-xs">
+                    {member.user.name.charAt(0)}
+                  </div>
+                )}
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {member.user.name}
+                </span>
+              </div>
+              <span className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+                {member.role.toLowerCase()}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onClose}
+          className="mt-6 w-full"
+        >
+          Close
+        </Button>
+      </div>
+    </div>
+  );
+};
 export default function BoardPage() {
   const { boardId } = useParams();
   const navigate = useNavigate();
@@ -65,9 +111,12 @@ export default function BoardPage() {
   const [showBoardMenu, setShowBoardMenu] = useState(false);
   const [showEditBoardModal, setShowEditBoardModal] = useState(false);
   const [boardIsBookmarked, setBoardIsBookmarked] = useState(false);
+  const [isMemberListOpen, setIsMemberListOpen] = useState(false);
+  const [role, setRole] = useState("ADMIN");
 
   useSocket(boardId);
   const { user } = useAuth0();
+  // console.log(user);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -111,6 +160,7 @@ export default function BoardPage() {
     toast.success("Board archived");
     navigate("/dashboard");
   };
+  //everything apart from insights, search tasks and the circle circle
 
   const loadBoard = async () => {
     if (!boardId) return;
@@ -118,6 +168,21 @@ export default function BoardPage() {
     try {
       const response = await boardsAPI.getBoard(boardId);
       setCurrentBoard(response.data.board);
+      // console.log(response.data.board);
+      const id = await authAPI.getProfile(user?.sub);
+      console.log(id);
+
+      //overhere nigga
+      for (const member of response.data.board.members) {
+        // console.log(member.user.auth0Id);
+
+        if (id.data.user.auth0Id == member.user.auth0Id) {
+          // console.log(user?.sub, member.user);
+          setRole(member.role);
+          // console.log(member.role);
+        }
+      }
+
       setBoardIsBookmarked(response.data.board.isBookMarked || false);
     } catch (error) {
       console.error("Error loading board:", error);
@@ -128,10 +193,12 @@ export default function BoardPage() {
   };
 
   const handleDragStart = (event: any) => {
+    if (role == "VIEWER") return;
     setActiveId(event.active.id);
   };
 
   const handleDragEnd = async (event: any) => {
+    if (role == "VIEWER") return;
     const { active, over } = event;
     setActiveId(null);
 
@@ -218,57 +285,73 @@ export default function BoardPage() {
   }, []);
 
   const handleCreateTask = (listId: string) => {
-    setSelectedListId(listId);
-    setIsCreateTaskModalOpen(true);
+    if (role == "VIEWER") {
+      toast.error("You don't have permission to create tasks");
+    } else {
+      setSelectedListId(listId);
+      setIsCreateTaskModalOpen(true);
+    }
   };
 
   const handleDeleteList = async (listId: string) => {
-    try {
-      await boardsAPI.deleteList(boardId!, listId);
-      loadBoard();
-      toast.success("List deleted successfully");
-    } catch (error) {
-      console.error("Error deleting list:", error);
-      toast.error("Failed to delete list");
+    if (role == "VIEWER") {
+      toast.error("You don't have permission to create tasks");
+    } else {
+      try {
+        await boardsAPI.deleteList(boardId!, listId);
+        loadBoard();
+        toast.success("List deleted successfully");
+      } catch (error) {
+        console.error("Error deleting list:", error);
+        toast.error("Failed to delete list");
+      }
     }
   };
 
   const handleEditList = async (listId: string, title: string) => {
-    try {
-      await boardsAPI.updateList(boardId!, listId, { title });
-      loadBoard();
-      toast.success("List updated successfully");
-    } catch (error) {
-      console.error("Error updating list:", error);
-      toast.error("Failed to update list");
+    if (role == "VIEWER") {
+      toast.error("You don't have permission to create tasks");
+    } else {
+      try {
+        await boardsAPI.updateList(boardId!, listId, { title });
+        loadBoard();
+        toast.success("List updated successfully");
+      } catch (error) {
+        console.error("Error updating list:", error);
+        toast.error("Failed to update list");
+      }
     }
   };
 
   const handleAITasksGenerated = async (tasks: any[], list_no: any) => {
-    try {
-      // Create tasks in the first list or a default list
-      const targetListId = currentBoard?.lists[list_no - 1]?.id;
-      if (!targetListId) {
-        toast.error("No list available to add tasks");
-        return;
-      }
-      console.log("At least you reaching here");
-      //think I made misatake
-      for (const task of tasks) {
-        await tasksAPI.createTask({
-          title: task.title,
-          description: task.description,
-          listId: targetListId,
-          position: 0,
-          priority: task.priority,
-          createdById: user?.sub,
-        });
-      }
+    if (role == "VIEWER") {
+      toast.error("You don't have permission to create tasks");
+    } else {
+      try {
+        // Create tasks in the first list or a default list
+        const targetListId = currentBoard?.lists[list_no - 1]?.id;
+        if (!targetListId) {
+          toast.error("No list available to add tasks");
+          return;
+        }
+        console.log("At least you reaching here");
+        //think I made misatake
+        for (const task of tasks) {
+          await tasksAPI.createTask({
+            title: task.title,
+            description: task.description,
+            listId: targetListId,
+            position: 0,
+            priority: task.priority,
+            createdById: user?.sub,
+          });
+        }
 
-      loadBoard(); // Reload to show new tasks
-    } catch (error) {
-      console.error("Error creating AI-generated tasks:", error);
-      toast.error("Failed to create AI-generated tasks");
+        loadBoard(); // Reload to show new tasks
+      } catch (error) {
+        console.error("Error creating AI-generated tasks:", error);
+        toast.error("Failed to create AI-generated tasks");
+      }
     }
   };
   if (!currentBoard) {
@@ -293,7 +376,7 @@ export default function BoardPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
-      <header className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+      <header className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm ">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
@@ -304,10 +387,12 @@ export default function BoardPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsAddMemberModalOpen(true)}
+                  onClick={() => {
+                    setIsMemberListOpen(true); // Toggle member list instead of add member modal
+                  }}
                   className="flex items-center gap-1 text-gray-600 dark:text-gray-300"
                 >
-                  <Users size={16} /> <span>Share</span>
+                  <Users size={16} /> <span>View Members</span>
                 </Button>
                 <div className="h-5 border-r border-gray-300 dark:border-gray-600 mx-2"></div>
                 <Button
@@ -347,7 +432,13 @@ export default function BoardPage() {
               variant="outline"
               size="sm"
               id="ai_button"
-              onClick={() => setIsAIGeneratorOpen(true)}
+              onClick={() => {
+                if (role == "ADMIN") {
+                  setIsAIGeneratorOpen(true);
+                } else {
+                  toast.error("You are not allowed to perform this action");
+                }
+              }}
               icon={<Sparkles size={16} />}
               className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-none hover:from-purple-700 hover:to-blue-700"
             >
@@ -397,7 +488,13 @@ export default function BoardPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowBoardMenu(!showBoardMenu)}
+                onClick={() => {
+                  if (role == "ADMIN") {
+                    setShowBoardMenu(!showBoardMenu);
+                  } else {
+                    toast.error("You are not allowed to perform this action");
+                  }
+                }}
                 className="text-gray-600 dark:text-gray-300"
               >
                 <MoreHorizontal size={18} />
@@ -415,7 +512,10 @@ export default function BoardPage() {
                   </button>
                   <div className="border-t border-gray-200 dark:border-gray-700"></div>
                   <button
-                    onClick={handleBoardBookmark}
+                    onClick={() => {
+                      handleBoardBookmark();
+                      setShowBoardMenu(false);
+                    }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                   >
                     {boardIsBookmarked ? (
@@ -474,12 +574,19 @@ export default function BoardPage() {
                     onDeleteList={handleDeleteList}
                     onEditList={handleEditList}
                     refresh={loadBoard}
+                    role={role}
                   />
                 ))}
             </SortableContext>
             <div className="flex-shrink-0 w-72">
               <button
-                onClick={() => setIsCreateListModalOpen(true)}
+                onClick={() => {
+                  if (role !== "VIEWER") {
+                    setIsCreateListModalOpen(true);
+                  } else {
+                    toast.error("You are not allowed to perform this action");
+                  }
+                }}
                 className="w-full h-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <Plus size={18} />
@@ -531,6 +638,7 @@ export default function BoardPage() {
           setIsTaskModalOpen(false);
           loadBoard();
         }}
+        role={role}
       />
       <CreateTaskModal
         isOpen={isCreateTaskModalOpen}
@@ -552,14 +660,11 @@ export default function BoardPage() {
         boardId={boardId!}
         onMemberAdded={() => loadBoard()}
       />
-      {/* <AITaskGenerator
-        onTasksGenerated={handleAITasksGenerated}
-        boardContext={currentBoard.title}
-      /> */}
       <AISummaryPanel
         board={currentBoard}
         isVisible={isAISummaryOpen}
         onClose={() => setIsAISummaryOpen(false)}
+        role={role}
       />
       <EditBoardModal
         isOpen={!!showEditBoardModal}
@@ -572,6 +677,12 @@ export default function BoardPage() {
         <AITaskGenerator
           onTasksGenerated={handleAITasksGenerated}
           boardContext={currentBoard.title}
+        />
+      )}
+      {isMemberListOpen && (
+        <MemberListComponent
+          members={currentBoard.members || []}
+          onClose={() => setIsMemberListOpen(false)}
         />
       )}
     </div>

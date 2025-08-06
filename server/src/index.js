@@ -11,22 +11,12 @@ import "dotenv/config";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const uploadsDir = join(__dirname, "uploads");
-const uploaDir = join(__dirname, "../uploads");
 
-try {
-  await fs.access(uploadsDir);
-} catch {
-  await fs.mkdir(uploadsDir, { recursive: true });
-  await fs.mkdir(uploaDir, { recursive: true });
-  console.log("Uploads directory created");
-}
 // Import routes
 import authRoutes from "./routes/auth.js";
 import boardRoutes from "./routes/boards.js";
 import taskRoutes from "./routes/tasks.js";
 import aiRoutes from "./routes/ai.js";
-import uploadRoutes from "./routes/uploads.js";
 import analyticsRoutes from "./routes/analytics.js";
 import "dotenv/config";
 
@@ -60,20 +50,11 @@ fastify.decorate("prisma", prisma);
 fastify.decorate("genAI", genAI);
 fastify.decorate("io", null);
 
-// Ensure upload directory exists
-const uploadDir = process.env.UPLOAD_DIR || "./uploads";
-try {
-  await fs.access(uploadDir);
-} catch {
-  await fs.mkdir(uploadDir, { recursive: true });
-}
-
 // Register routes
 fastify.register(authRoutes, { prefix: "/api/auth" });
 fastify.register(boardRoutes, { prefix: "/api/boards" });
 fastify.register(taskRoutes, { prefix: "/api/tasks" });
 fastify.register(aiRoutes, { prefix: "/api/ai" });
-fastify.register(uploadRoutes, { prefix: "/api/uploads" });
 fastify.register(analyticsRoutes, { prefix: "/api/analytics" });
 
 // Health check

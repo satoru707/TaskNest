@@ -100,6 +100,8 @@ export default function AddMemberModal({
     });
 
     try {
+      console.log(boardId, selectedUser.id, role);
+
       const response = await boardsAPI.addMember(boardId, {
         userId: selectedUser.id,
         role,

@@ -76,7 +76,6 @@ const taskRoutes = async (fastify) => {
               user: true,
             },
           },
-          attachments: true,
           list: {
             include: {
               board: true,
@@ -124,9 +123,10 @@ const taskRoutes = async (fastify) => {
         labelIds,
         id,
         isArchived, // Destructured but will be validated
+        isBookMarked, // Added for bookmarking
       } = request.body;
 
-      // Get current task to check for list change
+      // Get current task to check for list change and bookmark status
       const currentTask = await prisma.task.findUnique({
         where: { id: taskId },
         include: {
@@ -151,6 +151,16 @@ const taskRoutes = async (fastify) => {
           return;
         }
         updatedIsArchived = isArchived; // Update only if provided and valid
+      }
+
+      // Validate and process isBookMarked
+      let updatedIsBookMarked = currentTask.isBookMarked; // Default to current value
+      if (isBookMarked !== undefined) {
+        if (typeof isBookMarked !== "boolean") {
+          reply.status(400).send({ error: "isBookMarked must be a boolean" });
+          return;
+        }
+        updatedIsBookMarked = isBookMarked; // Update only if provided and valid
       }
 
       // Update assignees if provided
@@ -197,6 +207,7 @@ const taskRoutes = async (fastify) => {
           ...(priority && { priority }),
           ...(completed !== undefined && { completed }),
           isArchived: updatedIsArchived, // Explicitly set the validated isArchived
+          isBookMarked: updatedIsBookMarked, // Explicitly set the validated isBookMarked
         },
         include: {
           assignees: {
@@ -222,11 +233,7 @@ const taskRoutes = async (fastify) => {
               createdAt: "desc",
             },
           },
-          attachments: {
-            include: {
-              uploadedBy: true,
-            },
-          },
+
           list: {
             include: {
               board: true,
@@ -269,8 +276,21 @@ const taskRoutes = async (fastify) => {
       if (updatedIsArchived !== currentTask.isArchived) {
         await prisma.activity.create({
           data: {
-            type: "TASK_ARCHIVED",
+            type: updatedIsArchived ? "TASK_ARCHIVED" : "TASK_UNARCHIVED",
             data: { taskTitle: task.title, isArchived: updatedIsArchived },
+            boardId: task.list.board.id,
+            taskId: task.id,
+            userId: currentTask.createdById,
+          },
+        });
+      }
+
+      // Create activity for bookmarking if changed
+      if (updatedIsBookMarked !== currentTask.isBookMarked) {
+        await prisma.activity.create({
+          data: {
+            type: updatedIsBookMarked ? "TASK_BOOKMARKED" : "TASK_UNBOOKMARKED",
+            data: { taskTitle: task.title, isBookMarked: updatedIsBookMarked },
             boardId: task.list.board.id,
             taskId: task.id,
             userId: currentTask.createdById,
@@ -338,7 +358,7 @@ const taskRoutes = async (fastify) => {
 
       await prisma.activity.create({
         data: {
-          type: "TASK_ARCHIVED",
+          type: isArchived == true ? "TASK_ARCHIVED" : "TASK_UNARCHIVED",
           taskId,
           userId: userId,
           data: request.body,
@@ -365,7 +385,7 @@ const taskRoutes = async (fastify) => {
 
       await prisma.activity.create({
         data: {
-          type: "TASK_BOOKMARKED",
+          type: isBookMarked == true ? "TASK_BOOKMARKED" : "TASK_UNBOOKMARKED",
           taskId,
           userId: userId,
           data: request.body,

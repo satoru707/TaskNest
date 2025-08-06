@@ -7,6 +7,7 @@ import KanbanCard from "./KanbanCard";
 import { cn } from "../../utils/cn";
 import { boardsAPI, authAPI } from "../../lib/api";
 import { useAuth0WithUser as useAuth0 } from "../../hooks/useAuth0withUser";
+import { toast } from "sonner";
 
 interface KanbanListProps {
   id: string;
@@ -18,6 +19,7 @@ interface KanbanListProps {
   onEditList?: (listId: string, title: string) => void;
   onArchiveList?: (listId: string) => void;
   refresh: () => void;
+  role: string;
 }
 
 export default function KanbanList({
@@ -30,6 +32,7 @@ export default function KanbanList({
   onEditList,
   onArchiveList,
   refresh,
+  role,
 }: KanbanListProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(title);
@@ -84,10 +87,11 @@ export default function KanbanList({
     ) {
       console.log(id);
       const userId = await authAPI.getProfile(user.sub);
+      console.log(id, userId);
 
-      const listData = await boardsAPI.getList(id);
+      const listData = await boardsAPI.getList(id.split("-")[1]);
       console.log(listData.data);
-      await boardsAPI.archiveList(listData.data.boardId, id, {
+      await boardsAPI.archiveList(listData.data.boardId, id.split("-")[1], {
         isArchived: true,
         userId: userId.data.user.id,
       });
@@ -148,7 +152,13 @@ export default function KanbanList({
 
         <div className="relative">
           <button
-            onClick={() => setShowListMenu(!showListMenu)}
+            onClick={() => {
+              if (role !== "VIEWER") {
+                setShowListMenu(!showListMenu);
+              } else {
+                toast.error("You don't have permission to create tasks");
+              }
+            }}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <MoreHorizontal size={16} />
@@ -197,7 +207,7 @@ export default function KanbanList({
                 onTaskClick?.(task);
               }}
             >
-              <KanbanCard task={task} refresh={refresh} />
+              <KanbanCard task={task} refresh={refresh} role={role} />
             </div>
           ))}
       </div>

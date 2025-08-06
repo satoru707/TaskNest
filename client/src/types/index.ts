@@ -4,7 +4,7 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
-  role: 'admin' | 'editor' | 'viewer';
+  role: "admin" | "editor" | "viewer";
 }
 
 // Board related types
@@ -22,7 +22,7 @@ export interface Board {
 export interface BoardMember {
   userId: string;
   user: User;
-  role: 'admin' | 'editor' | 'viewer';
+  role: "admin" | "editor" | "viewer";
 }
 
 // List related types
@@ -45,7 +45,6 @@ export interface Task {
   labels: Label[];
   assignees: User[];
   checklistItems: ChecklistItem[];
-  attachments: Attachment[];
   createdAt: string;
   updatedAt: string;
   createdBy: string;
@@ -63,16 +62,6 @@ export interface Label {
   id: string;
   name: string;
   color: string;
-}
-
-export interface Attachment {
-  id: string;
-  name: string;
-  url: string;
-  type: string;
-  size: number;
-  uploadedAt: string;
-  uploadedBy: string;
 }
 
 // Analytics types

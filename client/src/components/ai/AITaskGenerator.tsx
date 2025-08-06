@@ -31,6 +31,8 @@ export default function AITaskGenerator({
 
     setIsGenerating(true);
     try {
+      console.log(description, boardContext);
+
       const response = await aiAPI.generateTasks({
         description,
         context: boardContext,

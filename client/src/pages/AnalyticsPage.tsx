@@ -34,50 +34,87 @@ import { useCurrentUser } from "../lib/auth";
 import { toast } from "sonner";
 import { cn } from "../utils/cn";
 
+// Updated analytics type
+interface Analytics {
+  overview: {
+    assignedTasks: number;
+    completedAssignedTasks: number;
+    assignedCompletionRate: number;
+    createdTasks: number;
+    completedCreatedTasks: number;
+    createdCompletionRate: number;
+  };
+  tasksByBoard: {
+    boardId: string;
+    boardTitle: string;
+    assigned: number;
+    completed: number;
+  }[];
+  productivityTrend: { date: string; completed: number }[];
+  recentActivities: {
+    id: string;
+    type: string;
+    data: any;
+    createdAt: string;
+    board: { id: string; title: string } | null;
+    task: { id: string; title: string } | null;
+  }[];
+  avgCompletionTime: string; // Hours as string
+  topBoards: { boardId: string; boardTitle: string; taskCount: number }[];
+  priorityDistribution: Record<string, number>;
+}
+
 export default function AnalyticsPage() {
   const { dbUser } = useCurrentUser();
   const [timeRange, setTimeRange] = useState("week");
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasData, setHasData] = useState(false);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   useEffect(() => {
     loadAnalytics();
-  }, [timeRange, dbUser]);
-  console.log(analytics);
+  }, [timeRange, dbUser, priorityFilter, statusFilter]);
 
   const loadAnalytics = async () => {
     if (!dbUser) return;
 
     setIsLoading(true);
     try {
-      const response = await analyticsAPI.getUserAnalytics(dbUser.id);
+      const response = await analyticsAPI.getUserAnalytics(dbUser.id, {
+        timeRange,
+        priorityFilter,
+        statusFilter,
+      });
       setAnalytics(response.data);
+      console.log(response.data);
 
-      // Check if user has any meaningful data
       const hasAnyData =
         response.data.overview.assignedTasks > 0 ||
         response.data.overview.createdTasks > 0 ||
         response.data.tasksByBoard.length > 0 ||
-        response.data.recentActivities.length > 0;
+        response.data.recentActivities.length > 0 ||
+        response.data.topBoards.length > 0;
 
       setHasData(hasAnyData);
     } catch (error: any) {
       console.error("Error loading analytics:", error);
       setHasData(false);
       setAnalytics(null);
-      // Don't show error toast for empty data
       if (error.response?.status !== 404) {
-        toast.error("Failed to load analytics");
+        toast.error("Failed to load analytics: " + (error.message || ""));
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleTimeRangeChange = (range: string) => {
-    setTimeRange(range);
-  };
+  const handleTimeRangeChange = (range: string) => setTimeRange(range);
+  const handlePriorityFilterChange = (priority: string | null) =>
+    setPriorityFilter(priority);
+  const handleStatusFilterChange = (status: string | null) =>
+    setStatusFilter(status);
 
   if (isLoading) {
     return (
@@ -85,7 +122,6 @@ export default function AnalyticsPage() {
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-8"></div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {[...Array(4)].map((_, i) => (
               <div
@@ -94,7 +130,6 @@ export default function AnalyticsPage() {
               ></div>
             ))}
           </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {[...Array(4)].map((_, i) => (
               <div
@@ -129,7 +164,6 @@ export default function AnalyticsPage() {
             Refresh
           </Button>
         </div>
-
         <div className="text-center py-20">
           <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 mx-auto mb-6">
             <BarChart3 size={48} />
@@ -141,7 +175,6 @@ export default function AnalyticsPage() {
             Start creating boards, tasks, and collaborating with your team to
             see detailed analytics and insights here.
           </p>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto">
             <Card className="text-center p-6">
               <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 mx-auto mb-4">
@@ -154,7 +187,6 @@ export default function AnalyticsPage() {
                 Organize your projects into boards
               </p>
             </Card>
-
             <Card className="text-center p-6">
               <div className="w-12 h-12 rounded-full bg-secondary-100 dark:bg-secondary-900/30 flex items-center justify-center text-secondary-600 dark:text-secondary-400 mx-auto mb-4">
                 <Activity size={24} />
@@ -166,7 +198,6 @@ export default function AnalyticsPage() {
                 Break down work into manageable tasks
               </p>
             </Card>
-
             <Card className="text-center p-6">
               <div className="w-12 h-12 rounded-full bg-accent-100 dark:bg-accent-900/30 flex items-center justify-center text-accent-600 dark:text-accent-400 mx-auto mb-4">
                 <Users size={24} />
@@ -184,6 +215,12 @@ export default function AnalyticsPage() {
     );
   }
 
+  const getTrendChange = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? "+100%" : "-";
+    const change = ((current - previous) / previous) * 100;
+    return `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
@@ -197,42 +234,23 @@ export default function AnalyticsPage() {
         </div>
         <div className="mt-4 md:mt-0 flex flex-wrap gap-2">
           <div className="inline-flex rounded-md shadow-sm" role="group">
-            <button
-              type="button"
-              className={cn(
-                "px-4 py-2 text-sm font-medium rounded-l-lg focus:z-10",
-                timeRange === "week"
-                  ? "bg-primary-600 text-white hover:bg-primary-700"
-                  : "bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-              )}
-              onClick={() => handleTimeRangeChange("week")}
-            >
-              Week
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "px-4 py-2 text-sm font-medium border-t border-b focus:z-10",
-                timeRange === "month"
-                  ? "bg-primary-600 text-white hover:bg-primary-700 border-primary-600"
-                  : "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-              )}
-              onClick={() => handleTimeRangeChange("month")}
-            >
-              Month
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "px-4 py-2 text-sm font-medium rounded-r-lg focus:z-10",
-                timeRange === "year"
-                  ? "bg-primary-600 text-white hover:bg-primary-700"
-                  : "bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-              )}
-              onClick={() => handleTimeRangeChange("year")}
-            >
-              Year
-            </button>
+            {["week", "month", "year"].map((range) => (
+              <button
+                key={range}
+                type="button"
+                className={cn(
+                  "px-4 py-2 text-sm font-medium",
+                  range === "week" && "rounded-l-lg",
+                  range === "year" && "rounded-r-lg",
+                  timeRange === range
+                    ? "bg-primary-600 text-white hover:bg-primary-700"
+                    : "bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                )}
+                onClick={() => handleTimeRangeChange(range)}
+              >
+                {range.charAt(0).toUpperCase() + range.slice(1)}
+              </button>
+            ))}
           </div>
           <Button
             variant="outline"
@@ -242,60 +260,147 @@ export default function AnalyticsPage() {
           >
             Refresh
           </Button>
-          <Button variant="outline" size="sm" icon={<Download size={16} />}>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Download size={16} />}
+            onClick={() => toast.info("Export feature coming soon!")}
+          >
             Export
           </Button>
+          <select
+            className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            value={priorityFilter || ""}
+            onChange={(e) => handlePriorityFilterChange(e.target.value || null)}
+          >
+            <option value="">All Priorities</option>
+            {Object.keys(analytics.priorityDistribution).map((priority) => (
+              <option key={priority} value={priority}>
+                {priority} ({analytics.priorityDistribution[priority]})
+              </option>
+            ))}
+          </select>
+          <select
+            className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            value={statusFilter || ""}
+            onChange={(e) => handleStatusFilterChange(e.target.value || null)}
+          >
+            <option value="">All Statuses</option>
+            <option value="completed">Completed</option>
+            <option value="incomplete">Incomplete</option>
+          </select>
         </div>
       </div>
 
-      {/* Stats overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {[
           {
             title: "Assigned Tasks",
             value: analytics.overview.assignedTasks.toString(),
             icon: <BarChart3 size={20} />,
-            change: analytics.overview.assignedTasks > 0 ? "+12%" : "No data",
-            changeType: "increase",
+            change: getTrendChange(
+              analytics.overview.assignedTasks,
+              analytics.overview.assignedTasks - 5
+            ), // Example baseline
+            changeType:
+              analytics.overview.assignedTasks >
+              analytics.overview.assignedTasks - 5
+                ? "increase"
+                : "decrease",
             color: "text-primary-600 dark:text-primary-400",
-          },
-          {
-            title: "Completion Rate",
-            value: `${Math.round(
-              ((analytics.overview.createdCompletionRate +
-                analytics.overview.assignedCompletionRate) *
-                100) /
-                analytics.overview.createdTasks +
-                analytics.overview.assignedTasks
-            )}%`,
-            icon: <PieChartIcon size={20} />,
-            change:
-              analytics.overview.assignedCompletionRate &&
-              analytics.overview.createdCompletionRate > 0
-                ? "+5%"
-                : "No data",
-            changeType: "increase",
-            color: "text-secondary-600 dark:text-secondary-400",
           },
           {
             title: "Created Tasks",
             value: analytics.overview.createdTasks.toString(),
             icon: <TrendingUp size={20} />,
-            change:
-              analytics.overview.createdTasks &&
-              analytics.overview.assignedCompletionRate > 0
-                ? "+8"
-                : "No data",
-            changeType: "increase",
+            change: getTrendChange(
+              analytics.overview.createdTasks,
+              analytics.overview.createdTasks - 3
+            ),
+            changeType:
+              analytics.overview.createdTasks >
+              analytics.overview.createdTasks - 3
+                ? "increase"
+                : "decrease",
             color: "text-accent-600 dark:text-accent-400",
           },
           {
-            title: "Boards Active",
-            value: analytics.tasksByBoard.length.toString(),
+            title: "Completion Rate",
+            value:
+              `${
+                ((analytics.overview.completedAssignedTasks +
+                  analytics.overview.completedCreatedTasks) *
+                  100) /
+                (analytics.overview.assignedTasks +
+                  analytics.overview.createdTasks)
+              }%` || "N/A",
             icon: <Users size={20} />,
-            change: analytics.tasksByBoard.length > 0 ? "+2" : "No data",
-            changeType: "increase",
-            color: "text-success-600 dark:text-success-400",
+            change:
+              analytics.overview.assignedTasks +
+                analytics.overview.createdTasks >
+              0
+                ? getTrendChange(
+                    ((analytics.overview.completedAssignedTasks +
+                      analytics.overview.completedCreatedTasks) /
+                      (analytics.overview.assignedTasks +
+                        analytics.overview.createdTasks)) *
+                      100,
+                    (analytics.overview.assignedCompletionRate +
+                      analytics.overview.createdCompletionRate) /
+                      2
+                  )
+                : "-",
+            changeType:
+              analytics.overview.assignedTasks +
+                analytics.overview.createdTasks >
+              0
+                ? ((analytics.overview.completedAssignedTasks +
+                    analytics.overview.completedCreatedTasks) /
+                    (analytics.overview.assignedTasks +
+                      analytics.overview.createdTasks)) *
+                    100 >
+                  (analytics.overview.assignedCompletionRate +
+                    analytics.overview.createdCompletionRate) /
+                    2
+                  ? "increase"
+                  : ((analytics.overview.completedAssignedTasks +
+                      analytics.overview.completedCreatedTasks) /
+                      (analytics.overview.assignedTasks +
+                        analytics.overview.createdTasks)) *
+                      100 <
+                    (analytics.overview.assignedCompletionRate +
+                      analytics.overview.createdCompletionRate) /
+                      2
+                  ? "decrease"
+                  : "neutral"
+                : "neutral",
+          },
+          ,
+          //     {
+          //   title: "Completion rate",
+          //   value: analytics.topBoards[0]?.boardTitle || "N/A",
+          //   icon: <Users size={20} />,
+          //   change:
+          //     analytics.topBoards.length > 0
+          //       ? `+${analytics.topBoards[0].taskCount}`
+          //       : "-",
+          //   changeType: "increase",
+          //   color: "text-success-600 dark:text-success-400",
+          // },
+          {
+            title: "Avg. Completion Time",
+            value: `${analytics.avgCompletionTime} hrs`,
+            icon: <Clock size={20} />,
+            change: getTrendChange(
+              Number(analytics.avgCompletionTime),
+              Number(analytics.avgCompletionTime) - 1
+            ),
+            changeType:
+              Number(analytics.avgCompletionTime) <
+              Number(analytics.avgCompletionTime) - 1
+                ? "increase"
+                : "decrease",
+            color: "text-secondary-600 dark:text-secondary-400",
           },
         ].map((stat, index) => (
           <Card key={index}>
@@ -304,35 +409,34 @@ export default function AnalyticsPage() {
                 <div
                   className={cn(
                     "w-12 h-12 rounded-lg flex items-center justify-center mr-4",
-                    index === 0
-                      ? "bg-primary-100 dark:bg-primary-900/30"
-                      : index === 1
-                      ? "bg-secondary-100 dark:bg-secondary-900/30"
-                      : index === 2
-                      ? "bg-accent-100 dark:bg-accent-900/30"
-                      : "bg-success-100 dark:bg-success-900/30"
+                    {
+                      "bg-primary-100 dark:bg-primary-900/30": index === 0,
+                      "bg-accent-100 dark:bg-accent-900/30": index === 1,
+                      "bg-secondary-100 dark:bg-secondary-900/30": index === 2,
+                      "bg-success-100 dark:bg-success-900/30": index === 3,
+                    }
                   )}
                 >
-                  <span className={stat.color}>{stat.icon}</span>
+                  <span className={stat?.color}>{stat?.icon}</span>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    {stat.title}
+                    {stat?.title}
                   </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                    {stat.value}
+                    {stat?.value}
                   </p>
                 </div>
                 <div className="ml-auto">
                   <span
                     className={cn(
                       "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
-                      stat.changeType === "increase"
+                      stat?.changeType === "increase"
                         ? "bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-400"
                         : "bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-400"
                     )}
                   >
-                    {stat.change}
+                    {stat?.change}
                   </span>
                 </div>
               </div>
@@ -341,16 +445,13 @@ export default function AnalyticsPage() {
         ))}
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Productivity Trend */}
         <Card>
           <CardHeader>
             <CardTitle>Productivity Trend</CardTitle>
           </CardHeader>
           <CardContent>
-            {analytics.productivityTrend &&
-            analytics.productivityTrend.length > 0 ? (
+            {analytics.productivityTrend.length > 0 ? (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={analytics.productivityTrend}>
@@ -359,7 +460,13 @@ export default function AnalyticsPage() {
                       stroke="#374151"
                       strokeOpacity={0.1}
                     />
-                    <XAxis dataKey="date" tick={{ fill: "#6B7280" }} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fill: "#6B7280" }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
                     <YAxis tick={{ fill: "#6B7280" }} />
                     <Tooltip
                       contentStyle={{
@@ -367,6 +474,7 @@ export default function AnalyticsPage() {
                         borderColor: "#374151",
                         color: "#E5E7EB",
                       }}
+                      formatter={(value: number) => `${value} tasks`}
                     />
                     <Legend />
                     <Line
@@ -389,30 +497,32 @@ export default function AnalyticsPage() {
                     No productivity data yet
                   </p>
                   <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
-                    Complete some tasks to see your productivity trend
+                    Complete some tasks to see your trend
                   </p>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
-
-        {/* Tasks by Board */}
         <Card>
           <CardHeader>
-            <CardTitle>Tasks by Board</CardTitle>
+            <CardTitle>Priority Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            {analytics.tasksByBoard && analytics.tasksByBoard.length > 0 ? (
+            {Object.keys(analytics.priorityDistribution).length > 0 ? (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={analytics.tasksByBoard}>
+                  <BarChart
+                    data={Object.entries(analytics.priorityDistribution).map(
+                      ([priority, count]) => ({ priority, count })
+                    )}
+                  >
                     <CartesianGrid
                       strokeDasharray="3 3"
                       stroke="#374151"
                       strokeOpacity={0.1}
                     />
-                    <XAxis dataKey="boardTitle" tick={{ fill: "#6B7280" }} />
+                    <XAxis dataKey="priority" tick={{ fill: "#6B7280" }} />
                     <YAxis tick={{ fill: "#6B7280" }} />
                     <Tooltip
                       contentStyle={{
@@ -420,17 +530,12 @@ export default function AnalyticsPage() {
                         borderColor: "#374151",
                         color: "#E5E7EB",
                       }}
+                      formatter={(value: number) => `${value} tasks`}
                     />
                     <Legend />
                     <Bar
-                      dataKey="assigned"
-                      name="Assigned"
-                      fill="#94a3b8"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="completed"
-                      name="Completed"
+                      dataKey="count"
+                      name="Tasks"
                       fill="#10B981"
                       radius={[4, 4, 0, 0]}
                     />
@@ -442,10 +547,10 @@ export default function AnalyticsPage() {
                 <div className="text-center">
                   <BarChart3 className="mx-auto text-gray-400 mb-4" size={48} />
                   <p className="text-gray-500 dark:text-gray-400">
-                    No board data yet
+                    No priority data yet
                   </p>
                   <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
-                    Create boards and add tasks to see distribution
+                    Assign priorities to tasks
                   </p>
                 </div>
               </div>
@@ -454,16 +559,14 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Recent Activities */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Activities</CardTitle>
         </CardHeader>
         <CardContent>
-          {analytics.recentActivities &&
-          analytics.recentActivities.length > 0 ? (
-            <div className="space-y-4">
-              {analytics.recentActivities.slice(0, 10).map((activity: any) => (
+          {analytics.recentActivities.length > 0 ? (
+            <div className="space-y-4 overflow-y-auto">
+              {analytics.recentActivities.slice(0, 7).map((activity) => (
                 <div
                   key={activity.id}
                   className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
@@ -479,10 +582,10 @@ export default function AnalyticsPage() {
                       {activity.type
                         .replace("_", " ")
                         .toLowerCase()
-                        .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        .replace(/\b\w/g, (l) => l.toUpperCase())}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {activity.board?.title} •{" "}
+                      {activity.board?.title || "N/A"} •{" "}
                       {new Date(activity.createdAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -496,7 +599,7 @@ export default function AnalyticsPage() {
                 No recent activities
               </p>
               <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
-                Start working on tasks to see your activity here
+                Start working on tasks
               </p>
             </div>
           )}

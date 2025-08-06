@@ -185,23 +185,52 @@ const analyticsRoutes = async (fastify) => {
   });
 
   // Get user analytics
-  fastify.get("/users/:userId", async (request, reply) => {
+  fastify.post("/users/:userId", async (request, reply) => {
     try {
       const { userId } = request.params;
+      const {
+        timeRange = "week",
+        priorityFilter = null,
+        statusFilter = null,
+      } = request.body;
+
+      // Determine date range based on timeRange
+      const getDateRange = () => {
+        const now = new Date();
+        switch (timeRange) {
+          case "month":
+            return new Date(now.setMonth(now.getMonth() - 1));
+          case "year":
+            return new Date(now.setFullYear(now.getFullYear() - 1));
+          default:
+            return new Date(now.setDate(now.getDate() - 30)); // Default to 30 days
+        }
+      };
+      const dateRange = getDateRange();
+
+      // Base where clause for time range
+      const baseWhere = {
+        updatedAt: { gte: dateRange },
+        OR: [{ assignees: { some: { userId } } }, { createdById: userId }],
+      };
+
+      // Apply status filter
+      const whereClause = statusFilter
+        ? { ...baseWhere, completed: statusFilter === "completed" }
+        : baseWhere;
+
+      // Apply priority filter if provided
+      const filteredWhereClause = priorityFilter
+        ? { ...whereClause, priority: priorityFilter }
+        : whereClause;
 
       // Get user's task statistics
       const userTasks = await prisma.taskAssignee.findMany({
-        where: {
-          userId,
-        },
+        where: { userId },
         include: {
           task: {
             include: {
-              list: {
-                include: {
-                  board: true,
-                },
-              },
+              list: { include: { board: true } },
             },
           },
         },
@@ -209,34 +238,19 @@ const analyticsRoutes = async (fastify) => {
 
       // Get user's created tasks
       const createdTasks = await prisma.task.findMany({
-        where: {
-          createdById: userId,
-        },
-        include: {
-          list: {
-            include: {
-              board: true,
-            },
-          },
-        },
+        where: { createdById: userId },
+        include: { list: { include: { board: true } } },
       });
 
       // Get user's recent activities
       const recentActivities = await prisma.activity.findMany({
-        where: {
-          userId,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
+        where: { userId },
+        orderBy: { createdAt: "desc" },
         take: 20,
-        include: {
-          board: true,
-          task: true,
-        },
+        include: { board: true, task: true },
       });
 
-      // Process statistics
+      // Process basic statistics
       const assignedTasksCount = userTasks.length;
       const completedAssignedTasks = userTasks.filter(
         (ut) => ut.task.completed
@@ -248,63 +262,85 @@ const analyticsRoutes = async (fastify) => {
 
       // Group tasks by board
       const tasksByBoard = userTasks.reduce((acc, ut) => {
-        const boardId = ut.task.list.board.id;
-        const boardTitle = ut.task.list.board.title;
-
-        if (!acc[boardId]) {
-          acc[boardId] = {
-            boardId,
-            boardTitle,
-            assigned: 0,
-            completed: 0,
-          };
+        const board = ut.task.list?.board;
+        if (board) {
+          const boardId = board.id;
+          const boardTitle = board.title;
+          if (!acc[boardId]) {
+            acc[boardId] = { boardId, boardTitle, assigned: 0, completed: 0 };
+          }
+          acc[boardId].assigned++;
+          if (ut.task.completed) acc[boardId].completed++;
         }
-
-        acc[boardId].assigned++;
-        if (ut.task.completed) {
-          acc[boardId].completed++;
-        }
-
         return acc;
       }, {});
 
-      // Get productivity trend (last 30 days)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
+      // Get productivity trend
       const productivityTrend = await prisma.task.findMany({
-        where: {
-          OR: [
-            {
-              assignees: {
-                some: {
-                  userId,
-                },
-              },
-            },
-            {
-              createdById: userId,
-            },
-          ],
-          completed: true,
-          updatedAt: {
-            gte: thirtyDaysAgo,
-          },
-        },
-        select: {
-          updatedAt: true,
-        },
-        orderBy: {
-          updatedAt: "asc",
-        },
+        where: filteredWhereClause,
+        select: { updatedAt: true },
+        orderBy: { updatedAt: "asc" },
       });
 
-      // Group by day
       const productivityByDay = productivityTrend.reduce((acc, task) => {
         const date = task.updatedAt.toISOString().split("T")[0];
         acc[date] = (acc[date] || 0) + 1;
         return acc;
       }, {});
+
+      // Calculate average completion time
+      const completionTimes = await prisma.task.findMany({
+        where: filteredWhereClause,
+        select: { createdAt: true, updatedAt: true, completed: true },
+      });
+
+      const avgCompletionTime =
+        completionTimes.filter((t) => t.completed).length > 0
+          ? completionTimes
+              .filter((t) => t.completed)
+              .reduce(
+                (sum, task) =>
+                  sum +
+                  (new Date(task.updatedAt).getTime() -
+                    new Date(task.createdAt).getTime()),
+                0
+              ) /
+            (completionTimes.filter((t) => t.completed).length * 1000 * 60 * 60) // Hours
+          : 0;
+
+      // Get priority distribution
+      const taskPriorities = await prisma.task.findMany({
+        where: filteredWhereClause,
+        select: { priority: true },
+      });
+
+      const priorityDistribution = taskPriorities.reduce((acc, task) => {
+        const priority = task.priority || "None";
+        acc[priority] = (acc[priority] || 0) + 1;
+        return acc;
+      }, {}); // Fixed syntax here
+
+      // Get top boards using a raw query
+      const topBoardsRaw = await prisma.$queryRaw`
+      SELECT 
+        "b"."id" AS "boardId",
+        "b"."title" AS "boardTitle",
+        COUNT("ta"."taskId") AS "taskCount"
+      FROM "task_assignees" "ta"
+      JOIN "tasks" "t" ON "ta"."taskId" = "t"."id"
+      JOIN "lists" "l" ON "t"."listId" = "l"."id"
+      JOIN "boards" "b" ON "l"."boardId" = "b"."id"
+      WHERE "ta"."userId" = ${userId}
+      GROUP BY "b"."id", "b"."title"
+      ORDER BY "taskCount" DESC
+      LIMIT 3
+    `;
+
+      const topBoards = topBoardsRaw.map((tb) => ({
+        boardId: tb.boardId,
+        boardTitle: tb.boardTitle,
+        taskCount: Number(tb.taskCount),
+      }));
 
       return {
         overview: {
@@ -323,10 +359,7 @@ const analyticsRoutes = async (fastify) => {
         },
         tasksByBoard: Object.values(tasksByBoard),
         productivityTrend: Object.entries(productivityByDay).map(
-          ([date, count]) => ({
-            date,
-            completed: count,
-          })
+          ([date, count]) => ({ date, completed: count })
         ),
         recentActivities: recentActivities.map((activity) => ({
           id: activity.id,
@@ -334,25 +367,21 @@ const analyticsRoutes = async (fastify) => {
           data: activity.data,
           createdAt: activity.createdAt,
           board: activity.board
-            ? {
-                id: activity.board.id,
-                title: activity.board.title,
-              }
+            ? { id: activity.board.id, title: activity.board.title }
             : null,
           task: activity.task
-            ? {
-                id: activity.task.id,
-                title: activity.task.title,
-              }
+            ? { id: activity.task.id, title: activity.task.title }
             : null,
         })),
+        avgCompletionTime: avgCompletionTime.toFixed(2), // Hours
+        topBoards,
+        priorityDistribution,
       };
     } catch (error) {
       fastify.log.error(error);
       reply.status(500).send({ error: "Failed to fetch user analytics" });
     }
   });
-
   // Get global analytics (for admin users)
   fastify.get("/global", async (request, reply) => {
     try {

@@ -23,6 +23,7 @@ interface KanbanCardProps {
   onTaskUpdate?: (taskId: string, updates: any) => void;
   onBookmarkToggle?: (type: "task", id: string, isBookmarked: boolean) => void;
   refresh: () => void;
+  role: string;
 }
 
 export default function KanbanCard({
@@ -31,6 +32,7 @@ export default function KanbanCard({
   onTaskUpdate,
   onBookmarkToggle,
   refresh,
+  role,
 }: KanbanCardProps) {
   const [isBookmarked, setIsBookmarked] = useState(task.isBookMarked || false);
   const [isCompleted, setIsCompleted] = useState(task.completed || false);
@@ -70,6 +72,9 @@ export default function KanbanCard({
   };
 
   const handleCompletionToggle = async (e: React.MouseEvent) => {
+    if (role === "VIEWER") {
+      return;
+    }
     e.stopPropagation();
     const newCompletedState = !isCompleted;
     setIsCompleted(newCompletedState);
@@ -83,18 +88,24 @@ export default function KanbanCard({
   };
 
   const handleBookmarkToggle = async (e: React.MouseEvent) => {
+    if (role === "VIEWER") {
+      return;
+    }
     e.stopPropagation();
     const newBookmarkState = !isBookmarked;
     setIsBookmarked(newBookmarkState);
     onBookmarkToggle?.("task", task.id, newBookmarkState);
     const ans = await tasksAPI.updateTask(task.id.split("-")[1], {
-      isBookmarked: newBookmarkState,
+      isBookMarked: newBookmarkState,
     });
     console.log(ans);
     toast.success(newBookmarkState ? "Task bookmarked" : "Bookmark removed");
   };
 
   const handleArchive = async (e: React.MouseEvent) => {
+    if (role === "VIEWER") {
+      return;
+    }
     e.stopPropagation();
     try {
       await tasksAPI.updateTask(task.id.split("-")[1], {
@@ -248,13 +259,6 @@ export default function KanbanCard({
               <div className="flex items-center gap-1">
                 <MessageSquare size={12} />
                 <span>{task.comments.length}</span>
-              </div>
-            )}
-
-            {task.attachments && task.attachments.length > 0 && (
-              <div className="flex items-center gap-1">
-                <Paperclip size={12} />
-                <span>{task.attachments.length}</span>
               </div>
             )}
           </div>

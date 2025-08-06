@@ -23,7 +23,6 @@ model User {
   createdTasks   Task[]         @relation("TaskCreator")
   assignedTasks  TaskAssignee[]
   comments       Comment[]
-  attachments    Attachment[]   @relation("AttachmentUploader")
   activities     Activity[]
 
   @@map("users")
@@ -110,7 +109,6 @@ model Task {
   labels       TaskLabel[]
   checklistItems ChecklistItem[]
   comments     Comment[]
-  attachments  Attachment[]
   activities   Activity[]
 
   @@map("tasks")
@@ -187,25 +185,6 @@ model Comment {
   @@map("comments")
 }
 
-model Attachment {
-  id         String @id @default(cuid())
-  filename   String
-  originalName String
-  mimeType   String
-  size       Int
-  url        String
-  taskId     String
-  uploadedById String
-  
-  createdAt DateTime @default(now())
-
-  // Relations
-  task       Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  uploadedBy User @relation("AttachmentUploader", fields: [uploadedById], references: [id])
-
-  @@map("attachments")
-}
-
 model Activity {
   id      String       @id @default(cuid())
   type    ActivityType
@@ -248,18 +227,24 @@ enum ActivityType {
   BOARD_UPDATED
   BOARD_DELETED
   BOARD_ARCHIVED
+  BOARD_UNARCHIVED
   BOARD_BOOKMARKED
+  BOARD_UNBOOKMARKED
   LIST_CREATED
   LIST_UPDATED
   LIST_DELETED
   LIST_ARCHIVED
   LIST_BOOKMARKED
+  LIST_UNARCHIVED
+  LIST_UNBOOKMARKED
   TASK_CREATED
   TASK_UPDATED
   TASK_DELETED
   TASK_MOVED
   TASK_ARCHIVED
   TASK_BOOKMARKED
+  TASK_UNARCHIVED
+  TASK_UNBOOKMARKED
   TASK_ASSIGNED
   TASK_COMPLETED
   COMMENT_ADDED

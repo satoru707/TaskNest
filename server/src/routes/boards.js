@@ -116,11 +116,6 @@ const boardRoutes = async (fastify) => {
                       createdAt: "desc",
                     },
                   },
-                  attachments: {
-                    include: {
-                      uploadedBy: true,
-                    },
-                  },
                 },
                 orderBy: {
                   position: "asc",
@@ -303,8 +298,8 @@ const boardRoutes = async (fastify) => {
           userId,
         },
       });
-      console.log("Member added:", member);
-      io.to(`board-${boardId}`).emit("member-added", { member });
+      // console.log("Member added:", member);
+      // io.to(`board-${boardId}`).emit("member-added", { member });
 
       return { member };
     } catch (error) {
@@ -327,7 +322,7 @@ const boardRoutes = async (fastify) => {
 
       await prisma.activity.create({
         data: {
-          type: "BOARD_ARCHIVED",
+          type: isArchived == true ? "BOARD_ARCHIVED" : "BOARD_UNARCHIVED",
           boardId,
           userId: userId,
           data: { isArchived },
@@ -354,7 +349,8 @@ const boardRoutes = async (fastify) => {
 
       await prisma.activity.create({
         data: {
-          type: "BOARD_BOOKMARKED",
+          type:
+            isBookMarked == true ? "BOARD_BOOKMARKED" : "BOARD_UNBOOKMARKED",
           boardId,
           userId: userId,
           data: { isBookMarked },
@@ -382,7 +378,7 @@ const boardRoutes = async (fastify) => {
 
       await prisma.activity.create({
         data: {
-          type: "LIST_ARCHIVED",
+          type: isArchived == true ? "LIST_ARCHIVED" : "LIST_UNARCHIVED",
           boardId,
           userId: userId,
           data: { isArchived },
@@ -409,7 +405,7 @@ const boardRoutes = async (fastify) => {
 
       await prisma.activity.create({
         data: {
-          type: "LIST_BOOKMARKED",
+          type: isBookMarked == true ? "LIST_BOOKMARKED" : "LIST_UNBOOKMARKED",
           boardId,
           userId: userId,
         },
