@@ -135,6 +135,7 @@ export const useNotifications = () => {
     getUnreadCount,
     getNotificationsForUser,
   } = useNotificationStore();
+  console.log(notifications);
 
   const userNotifications = dbUser ? getNotificationsForUser(dbUser.id) : [];
   const unreadCount = getUnreadCount();

@@ -212,30 +212,14 @@ export default function TeamMembersPage() {
               : b
           )
         );
-
-        if (
-          dbUser &&
-          selectedMember &&
-          memberData.role !== selectedMember.role
-        ) {
-          addNotification({
-            type: "member_updated",
-            title: "Role Updated",
-            message: `Your role has been updated to ${memberData.role.toLowerCase()} on ${
-              board.title
-            }`,
-            userId: selectedMember.id,
-            triggeredBy: dbUser.id,
-            triggeredByName: dbUser.name,
-            data: {
-              oldRole: selectedMember.role,
-              newRole: memberData.role,
-              boardTitle: board.title,
-            },
-            read: false,
-          });
-        }
       }
+      console.log(memberData, selectedMember, selectedBoardId);
+
+      await boardsAPI.updateMemberRole(
+        selectedBoardId,
+        selectedMember.id,
+        memberData.role
+      );
 
       setShowEditModal(false);
       setSelectedMember(null);
@@ -249,7 +233,7 @@ export default function TeamMembersPage() {
 
   const handleRemoveMember = async (member: any, boardId: string) => {
     const confirmRemove = window.confirm(
-      `Are you sure you want to remove ${member.name} from this board? This action cannot be undone.`
+      `Are you sure you want to remove ${member.name} from this board? `
     );
 
     if (!confirmRemove) return;
@@ -267,20 +251,9 @@ export default function TeamMembersPage() {
               : b
           )
         );
+        console.log(boardId, member.id, member);
 
-        if (dbUser) {
-          addNotification({
-            type: "member_removed",
-            title: "Removed from Board",
-            message: `You have been removed from ${board.title} by ${dbUser.name}`,
-            userId: member.id,
-            triggeredBy: dbUser.id,
-            triggeredByName: dbUser.name,
-            data: { memberName: member.name, boardTitle: board.title },
-            read: false,
-          });
-        }
-
+        await boardsAPI.removeMember(boardId, member.id);
         toast.success(`${member.name} removed from board`);
       } else {
         toast.error(
@@ -446,7 +419,7 @@ export default function TeamMembersPage() {
               : "all"}{" "}
           </p>
         </div>
-        <div className="mt-4 lg:mt-0 flex flex-wrap gap-3">
+        {/* <div className="mt-4 lg:mt-0 flex flex-wrap gap-3">
           <Button
             variant="outline"
             onClick={() => setShowInvitationsPanel(true)}
@@ -460,7 +433,7 @@ export default function TeamMembersPage() {
           >
             Invite Member
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {boards.length > 0 ? (
@@ -478,7 +451,7 @@ export default function TeamMembersPage() {
                     {board.title}
                     <span
                       className={cn(
-                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ml-2",
+                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
                         board.isAdmin
                           ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                           : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
@@ -530,7 +503,7 @@ export default function TeamMembersPage() {
                             {member.role}
                           </span>
                           <div className="flex space-x-1">
-                            <Button
+                            {/* <Button
                               variant="ghost"
                               size="sm"
                               icon={<MessageCircle size={14} />}
@@ -542,7 +515,7 @@ export default function TeamMembersPage() {
                               disabled={!board.isAdmin}
                             >
                               Message
-                            </Button>
+                            </Button> */}
 
                             {member.role !== "OWNER" && (
                               <div>

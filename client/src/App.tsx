@@ -18,6 +18,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import TeamMembersPage from "./pages/TeamMembersPage";
 import BookmarksPage from "./pages/BookmarksPage";
 import ArchivePage from "./pages/ArchivePage";
+import SearchPage from "./pages/GlobalSearchPage";
 
 // Components
 import LoadingScreen from "./components/common/LoadingScreen";
@@ -73,6 +74,7 @@ function App() {
         <Route path="/team-members" element={<TeamMembersPage />} />
         <Route path="/bookmarks" element={<BookmarksPage />} />
         <Route path="/archive" element={<ArchivePage />} />
+        <Route path="/global-search" element={<SearchPage />} />
       </Route>
 
       {/* Redirect authenticated users from auth pages */}

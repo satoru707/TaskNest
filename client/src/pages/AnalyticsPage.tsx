@@ -216,10 +216,27 @@ export default function AnalyticsPage() {
   }
 
   const getTrendChange = (current: number, previous: number) => {
-    if (previous === 0) return current > 0 ? "+100%" : "-";
+    if (previous === 0) return current > 0 ? "+100%" : "0%";
     const change = ((current - previous) / previous) * 100;
     return `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
   };
+
+  // Calculate previous period's average from productivityTrend
+  const getPreviousPeriodAverage = () => {
+    if (!analytics?.productivityTrend.length) return 0;
+    const sortedTrend = [...analytics.productivityTrend].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    const currentPeriodCount = sortedTrend[0]?.completed || 0;
+    const previousPeriodData = sortedTrend.slice(1, 4); // Last 3 days/weeks/months
+    const previousAverage =
+      previousPeriodData.reduce((sum, entry) => sum + entry.completed, 0) /
+      Math.max(1, previousPeriodData.length);
+    return { current: currentPeriodCount, previous: previousAverage };
+  };
+
+  const { current: currentProductivity, previous: previousProductivity } =
+    getPreviousPeriodAverage();
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -300,11 +317,21 @@ export default function AnalyticsPage() {
             icon: <BarChart3 size={20} />,
             change: getTrendChange(
               analytics.overview.assignedTasks,
-              analytics.overview.assignedTasks - 5
-            ), // Example baseline
+              (analytics.productivityTrend.length > 1
+                ? analytics.productivityTrend
+                    .slice(1)
+                    .reduce((sum, entry) => sum + entry.completed, 0) /
+                  Math.max(1, analytics.productivityTrend.length - 1)
+                : analytics.overview.assignedTasks) || 0
+            ),
             changeType:
               analytics.overview.assignedTasks >
-              analytics.overview.assignedTasks - 5
+                (analytics.productivityTrend.length > 1
+                  ? analytics.productivityTrend
+                      .slice(1)
+                      .reduce((sum, entry) => sum + entry.completed, 0) /
+                    Math.max(1, analytics.productivityTrend.length - 1)
+                  : analytics.overview.assignedTasks) || 0
                 ? "increase"
                 : "decrease",
             color: "text-primary-600 dark:text-primary-400",
@@ -315,11 +342,21 @@ export default function AnalyticsPage() {
             icon: <TrendingUp size={20} />,
             change: getTrendChange(
               analytics.overview.createdTasks,
-              analytics.overview.createdTasks - 3
+              (analytics.productivityTrend.length > 1
+                ? analytics.productivityTrend
+                    .slice(1)
+                    .reduce((sum, entry) => sum + entry.completed, 0) /
+                  Math.max(1, analytics.productivityTrend.length - 1)
+                : analytics.overview.createdTasks) || 0
             ),
             changeType:
               analytics.overview.createdTasks >
-              analytics.overview.createdTasks - 3
+                (analytics.productivityTrend.length > 1
+                  ? analytics.productivityTrend
+                      .slice(1)
+                      .reduce((sum, entry) => sum + entry.completed, 0) /
+                    Math.max(1, analytics.productivityTrend.length - 1)
+                  : analytics.overview.createdTasks) || 0
                 ? "increase"
                 : "decrease",
             color: "text-accent-600 dark:text-accent-400",
@@ -329,78 +366,80 @@ export default function AnalyticsPage() {
             value:
               `${
                 ((analytics.overview.completedAssignedTasks +
-                  analytics.overview.completedCreatedTasks) *
-                  100) /
-                (analytics.overview.assignedTasks +
-                  analytics.overview.createdTasks)
-              }%` || "N/A",
+                  analytics.overview.completedCreatedTasks) /
+                  (analytics.overview.assignedTasks +
+                    analytics.overview.createdTasks)) *
+                100
+              }%` || "0%",
             icon: <Users size={20} />,
-            change:
-              analytics.overview.assignedTasks +
-                analytics.overview.createdTasks >
-              0
-                ? getTrendChange(
-                    ((analytics.overview.completedAssignedTasks +
-                      analytics.overview.completedCreatedTasks) /
-                      (analytics.overview.assignedTasks +
-                        analytics.overview.createdTasks)) *
-                      100,
-                    (analytics.overview.assignedCompletionRate +
-                      analytics.overview.createdCompletionRate) /
-                      2
-                  )
-                : "-",
-            changeType:
-              analytics.overview.assignedTasks +
-                analytics.overview.createdTasks >
-              0
-                ? ((analytics.overview.completedAssignedTasks +
-                    analytics.overview.completedCreatedTasks) /
+            change: getTrendChange(
+              ((analytics.overview.completedAssignedTasks +
+                analytics.overview.completedCreatedTasks) /
+                (analytics.overview.assignedTasks +
+                  analytics.overview.createdTasks)) *
+                100,
+              (analytics.productivityTrend.length > 1
+                ? (analytics.productivityTrend
+                    .slice(1)
+                    .reduce((sum, entry) => sum + entry.completed, 0) /
+                    Math.max(1, analytics.productivityTrend.length - 1) /
                     (analytics.overview.assignedTasks +
                       analytics.overview.createdTasks)) *
-                    100 >
-                  (analytics.overview.assignedCompletionRate +
+                  100
+                : (analytics.overview.assignedCompletionRate +
                     analytics.overview.createdCompletionRate) /
-                    2
-                  ? "increase"
-                  : ((analytics.overview.completedAssignedTasks +
-                      analytics.overview.completedCreatedTasks) /
+                  2) || 0
+            ),
+            changeType:
+              ((analytics.overview.completedAssignedTasks +
+                analytics.overview.completedCreatedTasks) /
+                (analytics.overview.assignedTasks +
+                  analytics.overview.createdTasks)) *
+                100 >
+                (analytics.productivityTrend.length > 1
+                  ? (analytics.productivityTrend
+                      .slice(1)
+                      .reduce((sum, entry) => sum + entry.completed, 0) /
+                      Math.max(1, analytics.productivityTrend.length - 1) /
                       (analytics.overview.assignedTasks +
                         analytics.overview.createdTasks)) *
-                      100 <
-                    (analytics.overview.assignedCompletionRate +
+                    100
+                  : (analytics.overview.assignedCompletionRate +
                       analytics.overview.createdCompletionRate) /
-                      2
-                  ? "decrease"
-                  : "neutral"
-                : "neutral",
+                    2) || 0
+                ? "increase"
+                : "decrease",
+            color: "text-secondary-600 dark:text-secondary-400",
           },
-          ,
-          //     {
-          //   title: "Completion rate",
-          //   value: analytics.topBoards[0]?.boardTitle || "N/A",
-          //   icon: <Users size={20} />,
-          //   change:
-          //     analytics.topBoards.length > 0
-          //       ? `+${analytics.topBoards[0].taskCount}`
-          //       : "-",
-          //   changeType: "increase",
-          //   color: "text-success-600 dark:text-success-400",
-          // },
           {
             title: "Avg. Completion Time",
             value: `${analytics.avgCompletionTime} hrs`,
             icon: <Clock size={20} />,
             change: getTrendChange(
               Number(analytics.avgCompletionTime),
-              Number(analytics.avgCompletionTime) - 1
+              (analytics.productivityTrend.length > 1
+                ? analytics.productivityTrend
+                    .slice(1)
+                    .reduce(
+                      (sum, entry) => sum + Number(analytics.avgCompletionTime),
+                      0
+                    ) / Math.max(1, analytics.productivityTrend.length - 1)
+                : Number(analytics.avgCompletionTime)) || 0
             ),
             changeType:
               Number(analytics.avgCompletionTime) <
-              Number(analytics.avgCompletionTime) - 1
+                (analytics.productivityTrend.length > 1
+                  ? analytics.productivityTrend
+                      .slice(1)
+                      .reduce(
+                        (sum, entry) =>
+                          sum + Number(analytics.avgCompletionTime),
+                        0
+                      ) / Math.max(1, analytics.productivityTrend.length - 1)
+                  : Number(analytics.avgCompletionTime)) || 0
                 ? "increase"
                 : "decrease",
-            color: "text-secondary-600 dark:text-secondary-400",
+            color: "text-success-600 dark:text-success-400",
           },
         ].map((stat, index) => (
           <Card key={index}>

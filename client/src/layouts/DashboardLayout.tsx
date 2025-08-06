@@ -17,6 +17,7 @@ import {
   Users,
   Archive,
   Target,
+  Earth,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useCurrentUser } from "../lib/auth";
@@ -25,6 +26,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { boardsAPI } from "../lib/api";
 import { toast } from "sonner";
 import { useNotifications } from "../hooks/useNotifications";
+import { useNotificationStore } from "../stores/useNotificationStore";
 
 const navItems = [
   {
@@ -33,6 +35,11 @@ const navItems = [
     icon: <LayoutDashboard size={20} />,
   },
   { path: "/analytics", label: "Analytics", icon: <BarChart size={20} /> },
+  {
+    path: "global-search",
+    label: "Global Search",
+    icon: <Earth size={20} />,
+  },
   { path: "/settings", label: "Settings", icon: <Settings size={20} /> },
 ];
 
@@ -45,10 +52,9 @@ const workspaceItems = [
 export default function DashboardLayout() {
   const { logout } = useAuth0();
   const { user, dbUser } = useCurrentUser();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } =
-    useNotifications();
+  const { unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const navigate = useNavigate();
-  const { theme, setTheme, isDarkMode } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [recentBoards, setRecentBoards] = useState<any[]>([]);
@@ -56,6 +62,7 @@ export default function DashboardLayout() {
   const handleLogout = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
   };
+  const { notifications } = useNotificationStore();
 
   useEffect(() => {
     const loadBoards = async () => {
@@ -445,7 +452,7 @@ export default function DashboardLayout() {
                       onClick={markAllNotificationsAsRead}
                       className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
                     >
-                      Mark all read
+                      Mark all as read
                     </button>
                   )}
                   <button

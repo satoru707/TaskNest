@@ -421,13 +421,18 @@ const boardRoutes = async (fastify) => {
     try {
       const { boardId, memberId } = request.params;
       const { role } = request.body;
-
+      console.log("data init", boardId, memberId, role);
       const member = await prisma.boardMember.update({
-        where: { id: memberId },
+        where: {
+          boardId_userId: {
+            // Use compound unique input
+            boardId: boardId,
+            userId: memberId,
+          },
+        },
         data: { role },
         include: { user: true },
       });
-
       // Create activity
       await prisma.activity.create({
         data: {
@@ -438,8 +443,8 @@ const boardRoutes = async (fastify) => {
         },
       });
 
-      // Emit real-time update
-      io.to(`board-${boardId}`).emit("member-updated", { member });
+      // // Emit real-time update
+      // io.to(`board-${boardId}`).emit("member-updated", { member });
 
       return { member };
     } catch (error) {
@@ -452,9 +457,15 @@ const boardRoutes = async (fastify) => {
     try {
       const { boardId, memberId } = request.params;
       const member = await prisma.boardMember.findUnique({
-        where: { id: memberId },
+        where: {
+          boardId_userId: {
+            boardId: boardId,
+            userId: memberId,
+          },
+        },
         include: { user: true },
       });
+      console.log("The ids", boardId, memberId, member);
 
       if (!member) {
         reply.status(404).send({ error: "Member not found" });
@@ -462,7 +473,12 @@ const boardRoutes = async (fastify) => {
       }
 
       await prisma.boardMember.delete({
-        where: { id: memberId },
+        where: {
+          boardId_userId: {
+            boardId: boardId,
+            userId: memberId,
+          },
+        },
       });
 
       // Create activity
@@ -476,7 +492,7 @@ const boardRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      io.to(`board-${boardId}`).emit("member-removed", { memberId });
+      // io.to(`board-${boardId}`).emit("member-removed", { memberId });
 
       return { success: true };
     } catch (error) {

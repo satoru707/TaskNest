@@ -25,6 +25,7 @@ export default function EditMemberModal({
   const [status, setStatus] = useState<"active" | "inactive">("active");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  console.log(member);
 
   useEffect(() => {
     if (member) {
@@ -136,7 +137,7 @@ export default function EditMemberModal({
                   {member.email}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Member since {new Date(member.joinedAt).toLocaleDateString()}
+                  Member since {new Date(member.createdAt).toLocaleDateString()}
                 </p>
               </div>
             </div>
