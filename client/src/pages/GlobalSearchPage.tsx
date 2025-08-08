@@ -55,6 +55,7 @@ export default function SearchPage() {
       return;
     }
   }, [dbUser, boards]);
+  console.log(import.meta.env.VITE_SOCKET_CORS_ORIGIN);
 
   useEffect(() => {
     const fetchBoards = async () => {
@@ -267,7 +268,7 @@ export default function SearchPage() {
             <Search size={48} />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-            No Boards Found
+            {searchQuery ? `No Board '${searchQuery}' Found` : "No Board Found"}
           </h3>
           <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto">
             Try entering a search query to find public boards.

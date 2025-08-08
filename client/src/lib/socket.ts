@@ -8,8 +8,8 @@ class SocketManager {
     if (this.socket?.connected) return this.socket;
 
     const SOCKET_URL =
-      // import.meta.env.VITE_SOCKET_URL ||
-      "http://localhost:3000";
+      import.meta.env.VITE_SOCKET_CORS_ORIGIN ||
+      "https://tasknest01.onrender.com";
 
     this.socket = io(SOCKET_URL, {
       transports: ["websocket", "polling"],
@@ -102,6 +102,10 @@ class SocketManager {
 
   onListUpdated(callback: (data: any) => void) {
     this.socket?.on("list-updated", callback);
+  }
+
+  onListArchived(callback: (data: any) => void) {
+    this.socket?.on("list-archived", callback);
   }
 
   onListDeleted(callback: (data: any) => void) {

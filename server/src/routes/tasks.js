@@ -97,7 +97,7 @@ const taskRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      // io.to(`board-${task.list.board.id}`).emit("task-created", { task });
+      io.to(`board-${task.list.board.id}`).emit("task-created", { task });
       console.log("Task", task);
 
       return { task };
@@ -299,7 +299,7 @@ const taskRoutes = async (fastify) => {
       }
 
       // Emit real-time update
-      // io.to(`board-${task.list.board.id}`).emit("task-updated", { task });
+      io.to(`board-${task.list.board.id}`).emit("task-updated", { task });
 
       return { task };
     } catch (error) {
@@ -334,7 +334,7 @@ const taskRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      // io.to(`board-${task.list.board.id}`).emit("task-deleted", { taskId });
+      io.to(`board-${task.list.board.id}`).emit("task-deleted", { taskId });
 
       return { success: true };
     } catch (error) {
@@ -441,9 +441,9 @@ const taskRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      // io.to(`board-${comment.task.list.board.id}`).emit("comment-added", {
-      //   comment,
-      // });
+      io.to(`board-${comment.task.list.board.id}`).emit("comment-added", {
+        comment,
+      });
 
       return { comment };
     } catch (error) {
@@ -478,10 +478,10 @@ const taskRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      // io.to(`board-${task?.list.board.id}`).emit("checklist-item-added", {
-      //   checklistItem,
-      //   taskId,
-      // });
+      io.to(`board-${task?.list.board.id}`).emit("checklist-item-added", {
+        checklistItem,
+        taskId,
+      });
 
       return { checklistItem };
     } catch (error) {
@@ -516,10 +516,10 @@ const taskRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      // io.to(`board-${task?.list.board.id}`).emit("checklist-item-updated", {
-      //   checklistItem,
-      //   taskId,
-      // });
+      io.to(`board-${task?.list.board.id}`).emit("checklist-item-updated", {
+        checklistItem,
+        taskId,
+      });
 
       return { checklistItem };
     } catch (error) {
@@ -549,10 +549,10 @@ const taskRoutes = async (fastify) => {
       });
 
       // Emit real-time update
-      // io.to(`board-${task?.list.board.id}`).emit("checklist-item-deleted", {
-      //   itemId,
-      //   taskId,
-      // });
+      io.to(`board-${task?.list.board.id}`).emit("checklist-item-deleted", {
+        itemId,
+        taskId,
+      });
 
       return { success: true };
     } catch (error) {

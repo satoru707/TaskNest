@@ -49,6 +49,11 @@ export const useSocket = (boardId?: string) => {
       removeList(data.listId);
     });
 
+    socketManager.onListArchived((data) => {
+      console.log("List archived:", data);
+      updateList(data.list.id, data.list);
+    });
+
     socketManager.onBoardUpdated((data) => {
       console.log("Board updated:", data);
       updateBoard(data.board.id, data.board);

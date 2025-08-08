@@ -183,7 +183,7 @@ export default function BoardPage() {
     navigate("/dashboard");
   };
   //everything apart from insights, search tasks and the circle circle
-  console.log(currentBoard);
+  // console.log(currentBoard);
 
   const loadBoard = async () => {
     if (!boardId) return;
@@ -192,7 +192,7 @@ export default function BoardPage() {
       const response = await boardsAPI.getBoard(boardId);
       setCurrentBoard(response.data.board);
       const id = await authAPI.getProfile(user?.sub);
-      console.log(response.data.board);
+      // console.log(response.data.board);
 
       //overhere nigga
       for (const member of response.data.board.members) {
@@ -218,7 +218,7 @@ export default function BoardPage() {
       const userId = await authAPI.getProfile(user?.sub);
 
       if (confirm) {
-        console.log(currentBoard.id, user.id);
+        // console.log(currentBoard.id, user.id);
 
         await boardsAPI.removeMember(currentBoard.id, userId.data.user.id);
         navigate("/dashboard");
@@ -227,7 +227,7 @@ export default function BoardPage() {
     }
   }
 
-  console.log(currentBoard);
+  // console.log(currentBoard);
 
   const handleDragStart = (event: any) => {
     if (role == "VIEWER") return;
@@ -298,17 +298,17 @@ export default function BoardPage() {
       }
     }
   };
-  console.log(currentBoard);
+  // console.log(currentBoard);
 
   const handleTaskClick = async (task: any) => {
-    console.log(task);
+    // console.log(task);
 
     if (typeof task === "string") {
-      console.log("task", task);
+      // console.log("task", task);
       const task_data = await tasksAPI.updateTask(task, { id: task });
       setSelectedTask(task_data.data.task);
     } else {
-      console.log("task", task);
+      // console.log("task", task);
 
       setSelectedTask(task);
     }
@@ -326,7 +326,7 @@ export default function BoardPage() {
     if (role == "VIEWER") {
       toast.error("You don't have permission to create tasks");
     } else {
-      setSelectedListId(listId);
+      setSelectedListId(listId.split("-")[1]);
       setIsCreateTaskModalOpen(true);
     }
   };
@@ -336,7 +336,9 @@ export default function BoardPage() {
       toast.error("You don't have permission to create tasks");
     } else {
       try {
-        await boardsAPI.deleteList(boardId!, listId);
+        console.log(boardId, listId);
+
+        await boardsAPI.deleteList(boardId!, listId.split("-")[1]);
         loadBoard();
         toast.success("List deleted successfully");
       } catch (error) {
@@ -351,7 +353,7 @@ export default function BoardPage() {
       toast.error("You don't have permission to create tasks");
     } else {
       try {
-        await boardsAPI.updateList(boardId!, listId, { title });
+        await boardsAPI.updateList(boardId!, listId.split("-")[1], { title });
         loadBoard();
         toast.success("List updated successfully");
       } catch (error) {
@@ -414,56 +416,56 @@ export default function BoardPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
-      <header className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm ">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                {currentBoard.title}
-              </h1>
-              <div className="flex items-center">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setIsMemberListOpen(true); // Toggle member list instead of add member modal
-                  }}
-                  className="flex items-center gap-1 text-gray-600 dark:text-gray-300"
-                >
-                  <Users size={16} /> <span>View Members</span>
-                </Button>
-                <div className="h-5 border-r border-gray-300 dark:border-gray-600 mx-2"></div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex items-center gap-1 text-gray-600 dark:text-gray-300"
-                >
-                  {currentBoard.isPublic ? (
-                    <Users size={16} />
-                  ) : (
-                    <Lock size={16} />
-                  )}
-                  <span>{currentBoard.isPublic ? "Public" : "Private"}</span>
-                </Button>
-              </div>
+      <header className="p-4 sm:p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm sm:overflow-x-auto">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:flex-row sm:flex-nowrap sm:gap-2 sm:min-w-[640px]">
+          {/* Left Section: Title and Members */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
+            <h1 className="text-xl sm:text-lg font-bold text-gray-900 dark:text-white whitespace-nowrap">
+              {currentBoard.title}
+            </h1>
+            <div className="flex items-center gap-2 sm:gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMemberListOpen(true)}
+                className="flex items-center gap-1 text-gray-600 dark:text-gray-300 text-sm sm:text-xs"
+              >
+                <Users size={16} className="sm:w-4 sm:h-4" />{" "}
+                <span>View Members</span>
+              </Button>
+              <div className="h-5 border-r border-gray-300 dark:border-gray-600 mx-2 sm:mx-1"></div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-1 text-gray-600 dark:text-gray-300 text-sm sm:text-xs"
+              >
+                {currentBoard.isPublic ? (
+                  <Users size={16} className="sm:w-4 sm:h-4" />
+                ) : (
+                  <Lock size={16} className="sm:w-4 sm:h-4" />
+                )}
+                <span>{currentBoard.isPublic ? "Public" : "Private"}</span>
+              </Button>
             </div>
-            {currentBoard.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                {currentBoard.description}
-              </p>
-            )}
           </div>
-          <div className="flex items-center gap-2">
+          {currentBoard.description && (
+            <p className="text-sm sm:text-xs text-gray-600 dark:text-gray-300 sm:mt-0">
+              {currentBoard.description}
+            </p>
+          )}
+
+          {/* Right Section: Search, AI Buttons, Avatars, Menu */}
+          <div className="flex items-center gap-2 sm:gap-1">
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={16} className="text-gray-400" />
+              <div className="absolute inset-y-0 left-0 pl-3 sm:pl-2 flex items-center pointer-events-none">
+                <Search size={16} className="text-gray-400 sm:w-4 sm:h-4" />
               </div>
               <input
                 type="text"
                 placeholder="Search tasks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="pl-10 sm:pl-8 pr-4 sm:pr-3 py-2 sm:py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm sm:text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:w-32"
               />
             </div>
             <Button
@@ -471,26 +473,25 @@ export default function BoardPage() {
               size="sm"
               id="ai_button"
               onClick={() => {
-                if (role == "ADMIN") {
+                if (role === "ADMIN") {
                   setIsAIGeneratorOpen(true);
                 } else {
                   toast.error("You are not allowed to perform this action");
                 }
               }}
-              icon={<Sparkles size={16} />}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-none hover:from-purple-700 hover:to-blue-700"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-none hover:from-purple-700 hover:to-blue-700 text-sm sm:text-xs sm:py-1 sm:px-2 whitespace-nowrap"
             >
-              AI Generate
+              <Sparkles size={16} className="mr-1 sm:w-4 sm:h-4" /> AI Generate
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsAISummaryOpen(true)}
-              icon={<Brain size={16} />}
+              className="text-sm sm:text-xs sm:py-1 sm:px-2 whitespace-nowrap"
             >
-              AI Insights
+              <Brain size={16} className="mr-1 sm:w-4 sm:h-4" /> AI Insights
             </Button>
-            <div className="flex -space-x-2">
+            <div className="flex -space-x-2 sm:-space-x-1.5">
               {[
                 {
                   id: currentBoard.owner.id,
@@ -501,10 +502,10 @@ export default function BoardPage() {
               ]
                 .concat(currentBoard.members)
                 ?.slice(0, 4)
-                .map((member: any, i: number) => (
+                .map((member, i) => (
                   <div
                     key={member.id || i}
-                    className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-white font-medium text-xs bg-primary-500"
+                    className="w-8 sm:w-6 h-8 sm:h-6 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-white font-medium text-xs sm:text-[10px] bg-primary-500"
                     title={member.user.name}
                   >
                     {member.user.avatar ? (
@@ -519,38 +520,38 @@ export default function BoardPage() {
                   </div>
                 ))}
               {currentBoard.members?.length > 4 && (
-                <div className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-xs font-medium">
+                <div className="w-8 sm:w-6 h-8 sm:h-6 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-xs sm:text-[10px] font-medium">
                   +{currentBoard.members.length - 4}
                 </div>
               )}
               <button
                 onClick={() => setIsAddMemberModalOpen(true)}
-                className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300"
+                className="w-8 sm:w-6 h-8 sm:h-6 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300"
               >
-                <UserPlus size={14} />
+                <UserPlus size={14} className="sm:w-3 sm:h-3" />
               </button>
             </div>
             <div className="relative">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  setShowBoardMenu(!showBoardMenu);
-                }}
-                className="text-gray-600 dark:text-gray-300"
+                onClick={() => setShowBoardMenu(!showBoardMenu)}
+                className="text-gray-600 dark:text-gray-300 p-1"
+                aria-label="Open board menu"
               >
-                <MoreHorizontal size={18} />
+                <MoreHorizontal size={18} className="sm:w-4 sm:h-4" />
               </Button>
-              {showBoardMenu && role == "ADMIN" ? (
-                <div className="absolute right-0 top-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px]">
+              {showBoardMenu && role === "ADMIN" ? (
+                <div className="absolute right-0 top-10 sm:top-7 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px] sm:min-w-[140px]">
                   <button
                     onClick={() => {
                       setShowEditBoardModal(true);
                       setShowBoardMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    className="w-full px-4 sm:px-2 py-2 sm:py-1 text-left text-sm sm:text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                   >
-                    <Settings size={14} /> Board Settings
+                    <Settings size={14} className="sm:w-3 sm:h-3" /> Board
+                    Settings
                   </button>
                   <div className="border-t border-gray-200 dark:border-gray-700"></div>
                   <button
@@ -558,38 +559,39 @@ export default function BoardPage() {
                       handleBoardBookmark();
                       setShowBoardMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    className="w-full px-4 sm:px-2 py-2 sm:py-1 text-left text-sm sm:text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                   >
                     {boardIsBookmarked ? (
-                      <BookmarkCheck size={14} />
+                      <BookmarkCheck size={14} className="sm:w-3 sm:h-3" />
                     ) : (
-                      <Bookmark size={14} />
+                      <Bookmark size={14} className="sm:w-3 sm:h-3" />
                     )}
                     {boardIsBookmarked ? "Remove Bookmark" : "Bookmark Board"}
                   </button>
                   <button
                     onClick={handleBoardArchive}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    className="w-full px-4 sm:px-2 py-2 sm:py-1 text-left text-sm sm:text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                   >
-                    <Archive size={14} /> Archive Board
+                    <Archive size={14} className="sm:w-3 sm:h-3" /> Archive
+                    Board
                   </button>
                   <button
                     onClick={() => {
                       toast.info("Export board functionality coming soon");
                       setShowEditBoardModal(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    className="w-full px-4 sm:px-2 py-2 sm:py-1 text-left text-sm sm:text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                   >
-                    <Star size={14} /> Export Board
+                    <Star size={14} className="sm:w-3 sm:h-3" /> Export Board
                   </button>
                 </div>
-              ) : showBoardMenu && role != "ADMIN" ? (
-                <div className="absolute right-0 top-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px]">
+              ) : showBoardMenu && role !== "ADMIN" ? (
+                <div className="absolute right-0 top-10 sm:top-7 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px] sm:min-w-[140px]">
                   <button
                     onClick={handleLeave}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    className="w-full px-4 sm:px-2 py-2 sm:py-1 text-left text-sm sm:text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                   >
-                    <LogOut size={14} /> Leave Board
+                    <LogOut size={14} className="sm:w-3 sm:h-3" /> Leave Board
                   </button>
                 </div>
               ) : null}
