@@ -156,7 +156,7 @@ export default function KanbanList({
               if (role !== "VIEWER") {
                 setShowListMenu(!showListMenu);
               } else {
-                toast.error("You don't have permission to create tasks");
+                toast.error("You don't have permission perform this action");
               }
             }}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"

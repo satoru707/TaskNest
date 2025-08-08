@@ -55,7 +55,7 @@ export default function DashboardLayout() {
   const { unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default to closed
   const [showNotifications, setShowNotifications] = useState(false);
   const [recentBoards, setRecentBoards] = useState<any[]>([]);
 
@@ -77,6 +77,8 @@ export default function DashboardLayout() {
     };
 
     loadBoards();
+    // Close sidebar on page load
+    setIsSidebarOpen(false);
   }, [dbUser]);
 
   const toggleSidebar = () => {
@@ -85,13 +87,25 @@ export default function DashboardLayout() {
 
   const handleThemeChange = (newTheme: "light" | "dark" | "system") => {
     setTheme(newTheme);
+    setIsSidebarOpen(false); // Close sidebar on theme change
   };
 
   const markNotificationAsRead = (notificationId: number) => {
     markAsRead(notificationId.toString());
+    setIsSidebarOpen(false); // Close sidebar on notification action
   };
 
-  const markAllNotificationsAsRead = markAllAsRead;
+  const markAllNotificationsAsRead = () => {
+    markAllNotificationsAsRead();
+    setIsSidebarOpen(false); // Close sidebar on mark all as read
+  };
+
+  // Handler to close sidebar on any navigation or click within sidebar
+  const handleSidebarClick = () => {
+    if (window.innerWidth < 800) {
+      setIsSidebarOpen(false); // Close only on mobile
+    }
+  };
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
@@ -130,7 +144,10 @@ export default function DashboardLayout() {
         {/* Mobile user area */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={() => {
+              setShowNotifications(!showNotifications);
+              setIsSidebarOpen(false); // Close sidebar on notification click
+            }}
             className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <Bell size={20} />
@@ -170,6 +187,7 @@ export default function DashboardLayout() {
               "fixed md:relative w-80 md:w-80 h-full z-20 md:z-0 bg-white dark:bg-gray-800 shadow-xl md:shadow-none border-r border-gray-200 dark:border-gray-700 flex flex-col",
               !isSidebarOpen && "md:w-20"
             )}
+            onClick={handleSidebarClick} // Close sidebar on any click within it (mobile only)
           >
             {/* Sidebar Header */}
             <div className="p-4 h-16 flex items-center justify-between border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
@@ -211,6 +229,7 @@ export default function DashboardLayout() {
                   <NavLink
                     key={item.path}
                     to={item.path}
+                    onClick={handleSidebarClick} // Close sidebar on navigation click
                     className={({ isActive }) =>
                       cn(
                         "flex items-center py-2 px-3 rounded-lg transition-all group",
@@ -241,6 +260,7 @@ export default function DashboardLayout() {
                         <NavLink
                           key={item.path}
                           to={item.path}
+                          onClick={handleSidebarClick} // Close sidebar on workspace click
                           className={({ isActive }) =>
                             cn(
                               "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
@@ -339,7 +359,10 @@ export default function DashboardLayout() {
                   </div>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => setShowNotifications(!showNotifications)}
+                      onClick={() => {
+                        setShowNotifications(!showNotifications);
+                        setIsSidebarOpen(false); // Close sidebar on notification click
+                      }}
                       className="relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                       title="Notifications"
                     >
@@ -351,7 +374,10 @@ export default function DashboardLayout() {
                       )}
                     </button>
                     <button
-                      onClick={handleLogout}
+                      onClick={() => {
+                        handleLogout();
+                        setIsSidebarOpen(false); // Close sidebar on logout
+                      }}
                       className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                       title="Sign out"
                     >
@@ -374,7 +400,10 @@ export default function DashboardLayout() {
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <button
-                      onClick={() => setShowNotifications(!showNotifications)}
+                      onClick={() => {
+                        setShowNotifications(!showNotifications);
+                        setIsSidebarOpen(false); // Close sidebar on notification click
+                      }}
                       className="relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                       title="Notifications"
                     >
@@ -386,7 +415,10 @@ export default function DashboardLayout() {
                       )}
                     </button>
                     <button
-                      onClick={handleLogout}
+                      onClick={() => {
+                        handleLogout();
+                        setIsSidebarOpen(false); // Close sidebar on logout
+                      }}
                       className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                       title="Sign out"
                     >
@@ -425,14 +457,20 @@ export default function DashboardLayout() {
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
                     <button
-                      onClick={markAllNotificationsAsRead}
+                      onClick={() => {
+                        markAllNotificationsAsRead();
+                        setIsSidebarOpen(false); // Close sidebar on mark all as read
+                      }}
                       className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
                     >
                       Mark all as read
                     </button>
                   )}
                   <button
-                    onClick={() => setShowNotifications(false)}
+                    onClick={() => {
+                      setShowNotifications(false);
+                      setIsSidebarOpen(false); // Close sidebar on close
+                    }}
                     className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
                     <X size={20} />
@@ -452,7 +490,10 @@ export default function DashboardLayout() {
                           ? "bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800"
                           : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
                       )}
-                      onClick={() => markAsRead(notification.id)}
+                      onClick={() => {
+                        markNotificationAsRead(notification.id);
+                        setIsSidebarOpen(false); // Close sidebar on notification click
+                      }}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">

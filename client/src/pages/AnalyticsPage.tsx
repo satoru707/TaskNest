@@ -428,15 +428,14 @@ export default function AnalyticsPage() {
             ),
             changeType:
               Number(analytics.avgCompletionTime) <
-                (analytics.productivityTrend.length > 1
-                  ? analytics.productivityTrend
-                      .slice(1)
-                      .reduce(
-                        (sum, entry) =>
-                          sum + Number(analytics.avgCompletionTime),
-                        0
-                      ) / Math.max(1, analytics.productivityTrend.length - 1)
-                  : Number(analytics.avgCompletionTime)) || 0
+              (analytics.productivityTrend.length > 1
+                ? analytics.productivityTrend
+                    .slice(1)
+                    .reduce(
+                      (sum, entry) => sum + Number(analytics.avgCompletionTime),
+                      0
+                    ) / Math.max(1, analytics.productivityTrend.length - 1)
+                : Number(analytics.avgCompletionTime))
                 ? "increase"
                 : "decrease",
             color: "text-success-600 dark:text-success-400",

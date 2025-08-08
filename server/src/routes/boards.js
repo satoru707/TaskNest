@@ -102,6 +102,7 @@ const boardRoutes = async (fastify) => {
             updatedAt: "desc",
           },
         });
+        console.log("All boards for the user I guess", boards);
       }
 
       return { boards };

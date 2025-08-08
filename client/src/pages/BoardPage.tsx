@@ -139,7 +139,7 @@ export default function BoardPage() {
           const isMember = currentBoard.members.some(
             (member: any) => member.user.auth0Id === id.data.user.auth0Id
           );
-          if (!isMember || role !== "ADMIN") {
+          if (!isMember && role !== "ADMIN") {
             toast.error("You are not authorized to view this board.");
             navigate("/dashboard");
           }
@@ -183,6 +183,7 @@ export default function BoardPage() {
     navigate("/dashboard");
   };
   //everything apart from insights, search tasks and the circle circle
+  console.log(currentBoard);
 
   const loadBoard = async () => {
     if (!boardId) return;
@@ -191,7 +192,7 @@ export default function BoardPage() {
       const response = await boardsAPI.getBoard(boardId);
       setCurrentBoard(response.data.board);
       const id = await authAPI.getProfile(user?.sub);
-      console.log(id);
+      console.log(response.data.board);
 
       //overhere nigga
       for (const member of response.data.board.members) {
@@ -225,6 +226,8 @@ export default function BoardPage() {
       }
     }
   }
+
+  console.log(currentBoard);
 
   const handleDragStart = (event: any) => {
     if (role == "VIEWER") return;
@@ -295,6 +298,7 @@ export default function BoardPage() {
       }
     }
   };
+  console.log(currentBoard);
 
   const handleTaskClick = async (task: any) => {
     console.log(task);
@@ -487,7 +491,15 @@ export default function BoardPage() {
               AI Insights
             </Button>
             <div className="flex -space-x-2">
-              {currentBoard.members
+              {[
+                {
+                  id: currentBoard.owner.id,
+                  createdAt: currentBoard.createdAt,
+                  role: "ADMIN",
+                  user: currentBoard.owner,
+                },
+              ]
+                .concat(currentBoard.members)
                 ?.slice(0, 4)
                 .map((member: any, i: number) => (
                   <div
@@ -720,7 +732,16 @@ export default function BoardPage() {
       )}
       {isMemberListOpen && (
         <MemberListComponent
-          members={currentBoard.members || []}
+          members={
+            [
+              {
+                id: currentBoard.owner.id,
+                createdAt: currentBoard.createdAt,
+                role: "ADMIN",
+                user: currentBoard.owner,
+              },
+            ].concat(currentBoard.members) || []
+          }
           onClose={() => setIsMemberListOpen(false)}
         />
       )}

@@ -1,8 +1,9 @@
 import axios from "axios";
 
-const API_BASE_URL = `${
-  import.meta.env.SOCKET_CORS_ORIGIN || "https://tasknest01.onrender.com"
-}/api`;
+const API_BASE_URL = "https://tasknest01.onrender.com";
+// || "http://localhost:3000/api";
+// import.meta.env.SOCKET_CORS_ORIGIN,
+
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {

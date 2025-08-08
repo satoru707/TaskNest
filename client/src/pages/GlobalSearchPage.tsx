@@ -8,10 +8,11 @@ import {
   CardContent,
 } from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import { Search, Users, Plus } from "lucide-react";
+import { Search, Users, Plus, ArrowRight } from "lucide-react";
 import { cn } from "../utils/cn";
-import { boardsAPI } from "../lib/api";
+import { boardsAPI, authAPI } from "../lib/api";
 import { toast } from "sonner";
+import { useAuth0WithUser as useAuth0 } from "../hooks/useAuth0withUser";
 import { get } from "http";
 
 interface Board {
@@ -38,12 +39,15 @@ export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [userBoards, setUsersBoards] = useState<any[]>([]);
   const [showJoinConfirm, setShowJoinConfirm] = useState<{
     boardId: string | null;
     title: string;
   } | null>(null);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
+  const { user } = useAuth0();
+  console.log(user);
   // Load boards initially
   useEffect(() => {
     if (!dbUser || !boards.length) {
@@ -64,6 +68,32 @@ export default function SearchPage() {
 
     fetchBoards();
   }, []);
+
+  useEffect(() => {
+    async function fun() {
+      const userId = await authAPI.getProfile(user?.sub || "");
+
+      const boards = await boardsAPI.getBoards(userId.data.user.id);
+      console.log("Boards", boards.data.boards);
+
+      setUsersBoards(boards.data.boards);
+    }
+    fun();
+    console.log("User boards", boards);
+  }, []);
+
+  function userInBoard(boardId: string) {
+    console.log("You blind asf nigga", boardId, userBoards);
+    for (var board of userBoards) {
+      console.log("here nigga", board.id, boardId);
+      if (board.id == boardId) {
+        console.log("Jackpot");
+        return true;
+      }
+    }
+    return false;
+  }
+  console.log("Analyise this", userBoards, searchResults);
 
   // Search functionality (triggered only when query is non-empty)
   useEffect(() => {
@@ -107,7 +137,15 @@ export default function SearchPage() {
   }, [searchQuery, boards]);
 
   const handleJoinBoard = (boardId: string, title: string) => {
-    setShowJoinConfirm({ boardId, title });
+    const present = userInBoard(boardId);
+    console.log("Is this nigga present", present);
+
+    if (present == true) {
+      toast.error("You are already a member of this board!");
+      return;
+    } else {
+      setShowJoinConfirm({ boardId, title });
+    }
   };
 
   const confirmJoinBoard = async () => {
@@ -115,21 +153,25 @@ export default function SearchPage() {
 
     if (!showJoinConfirm || !dbUser) return;
 
-    const confirmed = window.confirm(
-      `Are you sure you want to join "${showJoinConfirm.title}" as a viewer?`
-    );
-    if (confirmed && showJoinConfirm.boardId) {
-      try {
-        // Assume joinBoard API call (placeholder, replace with actual API)
-        await boardsAPI.addMember(showJoinConfirm.boardId, {
-          role: "VIEWER",
-          userId: dbUser.id,
-        });
-        toast.success(`${showJoinConfirm.title} joined as a viewer!`);
-        navigate(`/boards/${showJoinConfirm.boardId}`);
-      } catch (error: any) {
-        console.error("Error joining board:", error);
-        toast.error("Failed to join board: " + (error.message || ""));
+    if (showJoinConfirm.boardId) {
+      const present = userInBoard(showJoinConfirm.boardId);
+      console.log("Present", present);
+
+      if (present == true) {
+        toast.error("You are already a member of this board!");
+        return;
+      } else {
+        try {
+          await boardsAPI.addMember(showJoinConfirm.boardId, {
+            role: "VIEWER",
+            userId: dbUser.id,
+          });
+          toast.success(`${showJoinConfirm.title} joined as a viewer!`);
+          navigate(`/boards/${showJoinConfirm.boardId}`);
+        } catch (error: any) {
+          console.error("Error joining board:", error);
+          toast.error("Failed to join board: " + (error.message || ""));
+        }
       }
     }
     setShowJoinConfirm(null);
@@ -195,14 +237,25 @@ export default function SearchPage() {
                       <Users size={16} />
                       {result.memberCount + 1} Members
                     </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleJoinBoard(result.id, result.title)}
-                    >
-                      <Plus size={16} className="mr-2" />
-                      Join as Viewer
-                    </Button>
+                    {userInBoard(result.id) != true ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleJoinBoard(result.id, result.title)}
+                      >
+                        <Plus size={16} className="mr-2" />
+                        Join as Viewer
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/boards/${result.id}`)}
+                      >
+                        Go to Board
+                        <ArrowRight size={16} className="ml-2" />
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
