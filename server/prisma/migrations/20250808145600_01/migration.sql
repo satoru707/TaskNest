@@ -8,7 +8,7 @@ CREATE TYPE "BoardRole" AS ENUM ('ADMIN', 'EDITOR', 'VIEWER');
 CREATE TYPE "Priority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
 
 -- CreateEnum
-CREATE TYPE "ActivityType" AS ENUM ('BOARD_CREATED', 'BOARD_UPDATED', 'BOARD_DELETED', 'LIST_CREATED', 'LIST_UPDATED', 'LIST_DELETED', 'TASK_CREATED', 'TASK_UPDATED', 'TASK_DELETED', 'TASK_MOVED', 'TASK_ASSIGNED', 'TASK_COMPLETED', 'COMMENT_ADDED', 'ATTACHMENT_ADDED', 'MEMBER_ADDED', 'MEMBER_REMOVED', 'MEMBER_UPDATED');
+CREATE TYPE "ActivityType" AS ENUM ('BOARD_CREATED', 'BOARD_UPDATED', 'BOARD_DELETED', 'BOARD_ARCHIVED', 'BOARD_UNARCHIVED', 'BOARD_BOOKMARKED', 'BOARD_UNBOOKMARKED', 'LIST_CREATED', 'LIST_UPDATED', 'LIST_DELETED', 'LIST_ARCHIVED', 'LIST_BOOKMARKED', 'LIST_UNARCHIVED', 'LIST_UNBOOKMARKED', 'TASK_CREATED', 'TASK_UPDATED', 'TASK_DELETED', 'TASK_MOVED', 'TASK_ARCHIVED', 'TASK_BOOKMARKED', 'TASK_UNARCHIVED', 'TASK_UNBOOKMARKED', 'TASK_ASSIGNED', 'TASK_COMPLETED', 'COMMENT_ADDED', 'ATTACHMENT_ADDED', 'MEMBER_ADDED', 'MEMBER_REMOVED', 'MEMBER_UPDATED');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -35,8 +35,8 @@ CREATE TABLE "boards" (
     "isArchived" BOOLEAN NOT NULL DEFAULT false,
     "isBookMarked" BOOLEAN NOT NULL DEFAULT false,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "archivedAt" TIMESTAMP(3) NOT NULL,
-    "bookMarkedAt" TIMESTAMP(3) NOT NULL,
+    "archivedAt" TIMESTAMP(3),
+    "bookMarkedAt" TIMESTAMP(3),
 
     CONSTRAINT "boards_pkey" PRIMARY KEY ("id")
 );
@@ -59,11 +59,9 @@ CREATE TABLE "lists" (
     "boardId" TEXT NOT NULL,
     "position" INTEGER NOT NULL,
     "isArchived" BOOLEAN NOT NULL DEFAULT false,
-    "isBookMarked" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "archivedAt" TIMESTAMP(3) NOT NULL,
-    "bookMarkedAt" TIMESTAMP(3) NOT NULL,
+    "archivedAt" TIMESTAMP(3),
 
     CONSTRAINT "lists_pkey" PRIMARY KEY ("id")
 );
@@ -83,8 +81,8 @@ CREATE TABLE "tasks" (
     "isBookMarked" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "archivedAt" TIMESTAMP(3) NOT NULL,
-    "bookMarkedAt" TIMESTAMP(3) NOT NULL,
+    "archivedAt" TIMESTAMP(3),
+    "bookMarkedAt" TIMESTAMP(3),
 
     CONSTRAINT "tasks_pkey" PRIMARY KEY ("id")
 );
@@ -140,21 +138,6 @@ CREATE TABLE "comments" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "comments_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "attachments" (
-    "id" TEXT NOT NULL,
-    "filename" TEXT NOT NULL,
-    "originalName" TEXT NOT NULL,
-    "mimeType" TEXT NOT NULL,
-    "size" INTEGER NOT NULL,
-    "url" TEXT NOT NULL,
-    "taskId" TEXT NOT NULL,
-    "uploadedById" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "attachments_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -226,12 +209,6 @@ ALTER TABLE "comments" ADD CONSTRAINT "comments_taskId_fkey" FOREIGN KEY ("taskI
 
 -- AddForeignKey
 ALTER TABLE "comments" ADD CONSTRAINT "comments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "attachments" ADD CONSTRAINT "attachments_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "attachments" ADD CONSTRAINT "attachments_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "activities" ADD CONSTRAINT "activities_boardId_fkey" FOREIGN KEY ("boardId") REFERENCES "boards"("id") ON DELETE CASCADE ON UPDATE CASCADE;
