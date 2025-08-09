@@ -270,7 +270,9 @@ export default function BookmarksPage() {
                           <Calendar size={12} />
                           <span>
                             {new Date(
-                              bookmark.bookmarkedAt
+                              bookmark.bookMarkedAt ||
+                                bookmark.updatedAt ||
+                                bookmark.createdAt
                             ).toLocaleDateString()}
                           </span>
                         </div>

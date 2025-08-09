@@ -324,31 +324,34 @@ export default function ArchivePage() {
             >
               <Card className="hover:shadow-md transition-all duration-200">
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                  <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-4">
+                    {/* Left side */}
+                    <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-4 flex-1 min-w-0">
                       <div
                         className={cn(
-                          "w-12 h-12 rounded-lg flex items-center justify-center",
+                          "w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0",
                           getItemColor(item.type)
                         )}
                       >
                         {getItemIcon(item.type)}
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                             {item.title}
                           </h3>
                           <span
                             className={cn(
-                              "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium capitalize",
+                              "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium capitalize flex-shrink-0",
                               getItemColor(item.type)
                             )}
                           >
                             {item.type}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
                           <div className="flex items-center space-x-1">
                             <Calendar size={14} />
                             <span>
@@ -356,38 +359,39 @@ export default function ArchivePage() {
                               {new Date(item.archivedAt).toLocaleDateString()}
                             </span>
                           </div>
-                          <span>by {item.archivedBy}</span>
+                          <span className="truncate">by {item.archivedBy}</span>
                           {item.boardTitle && item.type !== "board" && (
-                            <span>from {item.boardTitle}</span>
+                            <span className="truncate">
+                              from {item.boardTitle}
+                            </span>
                           )}
                         </div>
+
                         {item.description && (
-                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-1">
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2">
                             {item.description}
                           </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    {/* Right side buttons */}
+                    <div className="flex flex-shrink-0 gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleRestore(item)}
                         icon={<RotateCcw size={14} />}
                         className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
-                      >
-                        Restore
-                      </Button>
+                      />
+
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handlePermanentDelete(item)}
                         icon={<Trash2 size={14} />}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                      >
-                        Delete
-                      </Button>
+                      />
                     </div>
                   </div>
                 </CardContent>

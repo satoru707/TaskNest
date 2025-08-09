@@ -9,13 +9,15 @@ const taskRoutes = async (fastify) => {
         title,
         description,
         listId,
-        position,
         dueDate,
         priority,
         createdById,
         assigneeIds,
         labelIds,
+        auth0Id,
       } = request.body;
+
+      console.log("autjiwjiwr", auth0Id);
 
       const user = await prisma.user.findUnique({
         where: { auth0Id: createdById },

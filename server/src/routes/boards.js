@@ -457,6 +457,7 @@ const boardRoutes = async (fastify) => {
           userId: userId,
         },
       });
+      io.to(`board-${boardId}`).emit("list-updated", { list });
       return { list };
     } catch (err) {
       fastify.log.error(error);

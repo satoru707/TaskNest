@@ -465,11 +465,12 @@ export default function TeamMembersPage() {
                     {board.members.map((member: any, memberIndex: number) => (
                       <div
                         key={member.id}
-                        className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+                        className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
                       >
-                        <div className="flex items-center space-x-3">
+                        {/* Member info */}
+                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 flex-1 min-w-0">
                           <div className="relative">
-                            <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center overflow-hidden">
+                            <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center overflow-hidden flex-shrink-0">
                               {member.avatar ? (
                                 <img
                                   src={member.avatar}
@@ -483,81 +484,68 @@ export default function TeamMembersPage() {
                               )}
                             </div>
                           </div>
-                          <div>
-                            <h4 className="font-medium text-gray-900 dark:text-white">
+                          <div className="min-w-0">
+                            <h4 className="font-medium text-gray-900 dark:text-white truncate">
                               {member.name}
                             </h4>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                               {member.email}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+
+                        {/* Role + Actions */}
+                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 flex-shrink-0">
                           <span
                             className={cn(
-                              "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                              "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium flex-shrink-0",
                               getRoleColor(member.role)
                             )}
                           >
                             {getRoleIcon(member.role)}
                             {member.role}
                           </span>
-                          <div className="flex space-x-1">
-                            {/* <Button
-                              variant="ghost"
-                              size="sm"
-                              icon={<MessageCircle size={14} />}
-                              onClick={() => {
-                                setSelectedMember(member);
-                                setSelectedBoardId(board.id);
-                                setShowMessageModal(true);
-                              }}
-                              disabled={!board.isAdmin}
-                            >
-                              Message
-                            </Button> */}
 
-                            {member.role !== "OWNER" && (
-                              <div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="p-2"
-                                  onClick={() => {
-                                    if (board.isAdmin) {
-                                      setSelectedMember(member);
-                                      setSelectedBoardId(board.id);
-                                      setShowEditModal(true);
-                                    } else {
-                                      toast.error(
-                                        "You do not have permission to edit members"
-                                      );
-                                    }
-                                  }}
-                                  disabled={!board.isAdmin}
-                                >
-                                  <Edit size={14} />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                  onClick={() => {
-                                    if (board.isAdmin) {
-                                      handleRemoveMember(member, board.id);
-                                    } else {
-                                      toast.error(
-                                        "You do not have permission to remove members"
-                                      );
-                                    }
-                                  }}
-                                  disabled={!board.isAdmin}
-                                >
-                                  <Trash2 size={14} />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
+                          {member.role !== "OWNER" && (
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-2"
+                                onClick={() => {
+                                  if (board.isAdmin) {
+                                    setSelectedMember(member);
+                                    setSelectedBoardId(board.id);
+                                    setShowEditModal(true);
+                                  } else {
+                                    toast.error(
+                                      "You do not have permission to edit members"
+                                    );
+                                  }
+                                }}
+                                disabled={!board.isAdmin}
+                              >
+                                <Edit size={14} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                onClick={() => {
+                                  if (board.isAdmin) {
+                                    handleRemoveMember(member, board.id);
+                                  } else {
+                                    toast.error(
+                                      "You do not have permission to remove members"
+                                    );
+                                  }
+                                }}
+                                disabled={!board.isAdmin}
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

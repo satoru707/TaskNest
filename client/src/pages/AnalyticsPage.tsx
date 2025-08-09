@@ -364,38 +364,27 @@ export default function AnalyticsPage() {
           {
             title: "Completion Rate",
             value:
-              `${
-                ((analytics.overview.completedAssignedTasks +
-                  analytics.overview.completedCreatedTasks) /
-                  (analytics.overview.assignedTasks +
-                    analytics.overview.createdTasks)) *
-                100
-              }%` || "0%",
-            icon: <Users size={20} />,
-            change: getTrendChange(
-              ((analytics.overview.completedAssignedTasks +
-                analytics.overview.completedCreatedTasks) /
-                (analytics.overview.assignedTasks +
-                  analytics.overview.createdTasks)) *
-                100,
-              (analytics.productivityTrend.length > 1
-                ? (analytics.productivityTrend
-                    .slice(1)
-                    .reduce((sum, entry) => sum + entry.completed, 0) /
-                    Math.max(1, analytics.productivityTrend.length - 1) /
+              `${Number(
+                (
+                  ((analytics.overview.completedAssignedTasks +
+                    analytics.overview.completedCreatedTasks) /
                     (analytics.overview.assignedTasks +
                       analytics.overview.createdTasks)) *
                   100
-                : (analytics.overview.assignedCompletionRate +
-                    analytics.overview.createdCompletionRate) /
-                  2) || 0
-            ),
-            changeType:
-              ((analytics.overview.completedAssignedTasks +
-                analytics.overview.completedCreatedTasks) /
-                (analytics.overview.assignedTasks +
-                  analytics.overview.createdTasks)) *
-                100 >
+                ).toFixed(1)
+              )}%` || "0%",
+            icon: <Users size={20} />,
+            change: getTrendChange(
+              Number(
+                (
+                  ((analytics.overview.completedAssignedTasks +
+                    analytics.overview.completedCreatedTasks) /
+                    (analytics.overview.assignedTasks +
+                      analytics.overview.createdTasks)) *
+                  100
+                ).toFixed(1)
+              ),
+              Number(
                 (analytics.productivityTrend.length > 1
                   ? (analytics.productivityTrend
                       .slice(1)
@@ -406,11 +395,39 @@ export default function AnalyticsPage() {
                     100
                   : (analytics.overview.assignedCompletionRate +
                       analytics.overview.createdCompletionRate) /
-                    2) || 0
+                    2
+                ).toFixed(1)
+              ) || 0
+            ),
+            changeType:
+              Number(
+                (
+                  ((analytics.overview.completedAssignedTasks +
+                    analytics.overview.completedCreatedTasks) /
+                    (analytics.overview.assignedTasks +
+                      analytics.overview.createdTasks)) *
+                  100
+                ).toFixed(1)
+              ) >
+                Number(
+                  (analytics.productivityTrend.length > 1
+                    ? (analytics.productivityTrend
+                        .slice(1)
+                        .reduce((sum, entry) => sum + entry.completed, 0) /
+                        Math.max(1, analytics.productivityTrend.length - 1) /
+                        (analytics.overview.assignedTasks +
+                          analytics.overview.createdTasks)) *
+                      100
+                    : (analytics.overview.assignedCompletionRate +
+                        analytics.overview.createdCompletionRate) /
+                      2
+                  ).toFixed(1)
+                ) || 0
                 ? "increase"
                 : "decrease",
-            color: "text-secondary-600 dark:text-secondary-400",
+            color: "text-secondary-600 dark:text-seco,ndary-400",
           },
+
           {
             title: "Avg. Completion Time",
             value: `${analytics.avgCompletionTime} hrs`,
