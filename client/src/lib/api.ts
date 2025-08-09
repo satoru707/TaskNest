@@ -1,10 +1,9 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:3000/api";
-// `${
-//   import.meta.env.VITE_SOCKET_CORS_ORIGIN || "http://localhost:3000"
-//   // "https://tasknest01.onrender.com"
-// }/api`;
+const API_BASE_URL = `${
+  import.meta.env.VITE_SOCKET_CORS_ORIGIN || "http://localhost:3000"
+  // "https://tasknest01.onrender.com"
+}/api`;
 console.log(import.meta.env.VITE_SOCKET_CORS_ORIGIN);
 
 export const api = axios.create({
