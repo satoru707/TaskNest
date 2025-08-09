@@ -1,121 +1,173 @@
-TaskNest 🪺
-A collaborative task management platform that blends Trello's Kanban boards, Notion's flexibility, and AI-powered task magic.
-Built with React, Node.js, Prisma, Auth0, and Google’s Gemini AI.
+# TaskNest
+
+TaskNest is a collaborative task and board management platform that allows teams to organize work, track progress, and collaborate in real time. It also includes analytics and AI-powered features for enhanced productivity.
+
+---
+
+## ✨ Features
+
+- **Real-Time Collaboration** – Instantly sync tasks and boards across connected clients using Socket.IO.
+- **Task & Board Management** – Create, update, delete, and organize boards and tasks with ease.
+- **Analytics Dashboard** – View task completion trends and productivity insights.
+- **AI-Powered Assistance** – Get suggestions using the Google Generative AI API.
+- **File Uploads** – Upload and manage task-related files.(TBA)
+- **Authentication & Authorization** – Secured using Auth0.
+
+---
+
+## 🚧 Work in Progress
+
+This project is actively being developed and contains **a few unfinished or partially implemented features**.  
+If you are looking for a project to contribute to, there’s plenty of room for improvement!  
+
+Some examples of features you can help complete:
+- More detailed analytics and reporting
+- Enhanced AI task suggestions
+- Board & list sorting and filtering
+- Mobile-friendly optimizations
+- Role-based permissions for boards
+- Improved file upload UI
+- Notifications & activity history
 
 
+## 🛠 Tech Stack
 
-✨ Features
-🎯 Kanban Boards – Drag-and-drop tasks like a pro.
+**Frontend:**
+- [Vite](https://vitejs.dev/)
+- [React](https://react.dev/)
+- [TailwindCSS](https://tailwindcss.com/)
 
-🤖 AI-Powered – Generate tasks & get insights via Gemini AI.
+**Backend:**
+- [Fastify](https://fastify.dev/)
+- [Prisma](https://www.prisma.io/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Socket.IO](https://socket.io/)
 
-⚡ Real-time Collaboration – See updates instantly with Socket.IO.
+**AI:**
+- [GEMINI AI API](https://ai.google.dev/gemini-api/docs/)
 
-👥 Role-Based Access – Admin, Editor, Viewer – you pick who does what.
+**Authentication:**
+- [Auth0](https://auth0.com/)
 
-📊 Analytics Dashboard – Track productivity & project stats.
+---
 
-🔐 Auth0 Authentication – With social logins support.
+## 🚀 Getting Started
 
-🌙 Dark/Light Mode – Pretty UI that fits your vibe.
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/satoru707/TaskNest.git
+cd TaskNest
+2️⃣ Install Dependencies
+Frontend
 
-📱 Responsive – Works on any screen.
-
-🛠 Tech Stack
-Frontend: React 18, TypeScript, Tailwind CSS, Framer Motion
-Backend: Node.js, Fastify, Socket.IO
-Database: PostgreSQL + Prisma ORM
-Auth: Auth0
-AI: Google Gemini API
-Realtime: Socket.IO
-
-🚀 Quick Start
-Prerequisites
-Node.js 18+
-
-PostgreSQL
-
-Auth0 account
-
-Google AI Studio account (Gemini API)
-
-1. Clone & Install
 bash
 Copy
 Edit
-git clone <your-repo-url>
-cd tasknest
+cd frontend
 npm install
-2. Env Setup
-bash
-Copy
-Edit
-cp .env.example .env
-Edit .env with your database, Auth0, and Gemini keys.
+Backend
 
-3. Database Setup
 bash
 Copy
 Edit
-npm run db:generate
-npm run db:push
-npm run db:seed
-4. Start Dev Server
+cd backend
+npm install
+3️⃣ Configure Environment Variables
+Create a .env file in both frontend and backend directories using the templates below.
+
+Frontend .env.example
+env
+Copy
+Edit
+VITE_AUTH0_DOMAIN="your-auth0-domain"
+VITE_AUTH0_CLIENT_ID="your-auth0-client-id"
+VITE_AUTH0_CLIENT_SECRET="your-auth0-client-secret"
+VITE_AUTH0_AUDIENCE="your-auth0-audience-url"
+VITE_FRONTURL="http://localhost:5173"
+
+VITE_SOCKET_CORS_ORIGIN="http://localhost:3000"
+Backend .env.example
+env
+Copy
+Edit
+# Database
+DATABASE_URL="postgresql://postgres:password@localhost:5432/tasknest_db"
+# Optional Prisma Accelerate connection
+# DATABASE_URL="prisma+postgres://accelerate.prisma-data.net/?api_key=your-api-key"
+
+# AI API Key
+GEMINI_API_KEY="your-gemini-api-key"
+
+# Auth0 Settings
+AUTH0_DOMAIN="your-auth0-domain"
+AUTH0_CLIENT_ID="your-auth0-client-id"
+AUTH0_CLIENT_SECRET="your-auth0-client-secret"
+AUTH0_AUDIENCE="your-auth0-audience-url"
+AUTH0_MANAGEMENT_CLIENT_ID="your-auth0-management-client-id"
+AUTH0_MANAGEMENT_CLIENT_SECRET="your-auth0-management-client-secret"
+
+# Server Config
+PORT=3000
+UPLOAD_DIR="./uploads"
+MAX_FILE_SIZE=10485760
+
+# Socket.IO Config
+SOCKET_CORS_ORIGIN="http://localhost:5173"
+4️⃣ Set Up the Database
 bash
 Copy
 Edit
+cd backend
+npx prisma migrate dev
+5️⃣ Run the Application
+Backend
+
+bash
+Copy
+Edit
+cd backend
 npm run dev
-Frontend → http://localhost:5173
+Backend runs on: http://localhost:3000
 
-Backend → http://localhost:3000
+Frontend
 
-🔐 Auth0 Setup
-Create a SPA app in Auth0
-
-Add callback/logout URLs for local & prod
-
-Grab Domain, Client ID, and Client Secret
-
-Update .env
-
-🤖 Gemini AI Setup
-Create an API key in Google AI Studio
-
-Add it to .env → GEMINI_API_KEY
-
-🌐 Deployment
-Frontend (Vercel/Netlify)
 bash
 Copy
 Edit
-npm run build
-Deploy the dist folder.
+cd frontend
+npm run dev
+Frontend runs on: http://localhost:5173
 
-Backend (Railway/Heroku)
-Set env vars in hosting platform
+📊 Real-Time Events (Socket.IO)
+Event Name	Description
+join-board	Join a specific board room for live updates
+leave-board	Leave a specific board room
+task-updated	Broadcast task updates
+board-updated	Broadcast board changes
+task-created	Notify others of a new task
+list-created	Notify others of a new list
 
-Ensure DB is accessible
+📂 Folder Structure
+bash
+Copy
+Edit
+TaskNest/
+│
+├── backend/           # Fastify + Prisma backend
+│   ├── routes/        # API route handlers
+│   ├── prisma/        # Prisma schema & migrations
+│   ├── uploads/       # Uploaded files
+│   └── ...
+│
+├── frontend/          # Vite + React + Tailwind frontend
+│   ├── src/           # React components, pages, hooks
+│   └── ...
+│
+└── README.md
+📜 License
+This project is licensed under the MIT License.
 
-Update CORS origins
+🙌 Contributing
+Pull requests are welcome. For major changes, open an issue first to discuss what you’d like to change.
 
-📚 API Overview
-Boards – Create, fetch, update, delete.
-Tasks – Create, update, delete, add comments/checklists.
-AI – Task generation, summarization, suggestions.
-Analytics – Per board, per user, or global.
-
-🐛 Dev Notes
-I removed file upload support (it was half-baked anyway).
-
-I started adding a couple new features… but didn’t finish them yet. If you want to complete them, feel free to open a PR.
-
-There are a few extra routes that probably don’t need to exist – I kinda lost track when I didn’t touch the code for a while. Clean-up welcome! 😅
-
-📄 License
-MIT – free to use, tweak, and share.
-
-🤝 Contributing
-PRs are welcome! Especially if you feel like finishing those new features or trimming down the unnecessary routes.
-
-Built with 💪 by Praise
 
