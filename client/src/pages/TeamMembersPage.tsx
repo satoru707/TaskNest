@@ -213,7 +213,6 @@ export default function TeamMembersPage() {
           )
         );
       }
-      console.log(memberData, selectedMember, selectedBoardId);
 
       await boardsAPI.updateMemberRole(
         selectedBoardId,
@@ -251,8 +250,6 @@ export default function TeamMembersPage() {
               : b
           )
         );
-        console.log(boardId, member.id, member);
-
         await boardsAPI.removeMember(boardId, member.id);
         toast.success(`${member.name} removed from board`);
       } else {
@@ -322,8 +319,6 @@ export default function TeamMembersPage() {
         return 0;
     }
   });
-  console.log(sortedBoards);
-
   const getRoleColor = (role: string) => {
     switch (role) {
       case "OWNER":

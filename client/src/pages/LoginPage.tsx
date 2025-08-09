@@ -37,8 +37,6 @@ export default function LoginPage() {
           },
         });
       } else {
-        console.log(response);
-
         setError(response.data.error || "Error logging in");
       }
     } catch (error) {
@@ -91,9 +89,6 @@ export default function LoginPage() {
     const token = urlParams.get("code");
     if (error) {
       console.error(error, error_description);
-    }
-    if (token) {
-      console.log(token);
     }
   });
 

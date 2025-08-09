@@ -41,12 +41,10 @@ export default function AddMemberModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  // Debounced search effect
   useEffect(() => {
     const searchUsers = async () => {
       if (!searchQuery.trim() || (searchQuery.length < 2 && !selectedUser)) {
         setSearchResults([]);
-        // console.log("Clearing search results");
         setShowResults(false);
         return;
       }
@@ -84,29 +82,20 @@ export default function AddMemberModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Working");
+    ("Working");
 
     if (!selectedUser) {
       toast.error("Please select a user to add");
-      console.log("But I have a selcted user");
       return;
     }
 
     setIsSubmitting(true);
-    console.log("Adding member:", {
-      userId: selectedUser.id,
-      role,
-      boardId,
-    });
 
     try {
-      console.log(boardId, selectedUser.id, role);
-
       const response = await boardsAPI.addMember(boardId, {
         userId: selectedUser.id,
         role,
       });
-      console.log("Member added response:", response.data);
 
       onMemberAdded(response.data.member);
       handleClose();

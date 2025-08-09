@@ -192,10 +192,8 @@ export default function BoardPage() {
     try {
       const response = await boardsAPI.getBoard(boardId);
       setCurrentBoard(response.data.board);
-      console.log(response.data.board);
 
       const id = await authAPI.getProfile(user?.sub);
-      console.log(response.data.board);
 
       //overhere nigga
       for (const member of response.data.board.members) {
@@ -329,7 +327,6 @@ export default function BoardPage() {
     if (role == "VIEWER") {
       toast.error("You don't have permission to create tasks");
     } else {
-      console.log("THe list id", listId);
       setSelectedListId(listId);
 
       setIsCreateTaskModalOpen(true);
@@ -341,8 +338,6 @@ export default function BoardPage() {
       toast.error("You don't have permission to create tasks");
     } else {
       try {
-        console.log(boardId, listId);
-
         await boardsAPI.deleteList(boardId!, listId.split("-")[1]);
         loadBoard();
         toast.success("List deleted successfully");
@@ -354,8 +349,6 @@ export default function BoardPage() {
   };
 
   const handleEditList = async (listId: string, title: string) => {
-    console.log(listId);
-
     if (role == "VIEWER") {
       toast.error("You don't have permission to create tasks");
     } else {
@@ -370,8 +363,6 @@ export default function BoardPage() {
     }
   };
 
-  console.log("adad", selectedListId);
-
   const handleAITasksGenerated = async (tasks: any[], list_no: any) => {
     if (role == "VIEWER") {
       toast.error("You don't have permission to create tasks");
@@ -379,17 +370,11 @@ export default function BoardPage() {
       try {
         // Create tasks in the first list or a default list
 
-        console.log(list_no, currentBoard);
-
         const targetListId = currentBoard?.lists[list_no - 1]?.id;
-        console.log("targetListId", targetListId);
-
         if (!targetListId) {
           toast.error("No list available to add tasks");
           return;
         }
-        console.log("At least you reaching here");
-
         //think I made misatake
         for (const task of tasks) {
           await tasksAPI.createTask({
@@ -630,7 +615,6 @@ export default function BoardPage() {
               items={filteredLists.map((list: any) => `list-${list.id}`)} // Prefix with "list-"
               strategy={horizontalListSortingStrategy}
             >
-              {console.log(currentBoard.lists)}
               {currentBoard.lists
                 .filter((list: any) => !list.isArchived)
                 .map((list: any) => (

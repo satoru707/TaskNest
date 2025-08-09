@@ -87,11 +87,9 @@ export default function InviteMemberModal({
       setIsSearching(true);
       try {
         const response = await authAPI.searchUsers(searchQuery);
-        console.log(response);
 
         // Filter out existing members and current user
         const existingMemberIds = existingMembers.map((m) => m.id);
-        console.log("existingMemberIds", existingMemberIds);
 
         // const filteredResults = response.data.users.filter(
         //   (user: any) =>
@@ -100,7 +98,6 @@ export default function InviteMemberModal({
         const filteredResults = response.data.users.filter(
           (user: any) => user.id !== dbUser?.id
         );
-        console.log(filteredResults);
 
         setSearchResults(filteredResults);
         setShowResults(true);
@@ -153,7 +150,6 @@ export default function InviteMemberModal({
         role,
         inviteMethod,
       };
-      console.log(inviteData);
 
       onInviteSent(inviteData);
       handleClose();

@@ -31,8 +31,6 @@ export default function AITaskGenerator({
 
     setIsGenerating(true);
     try {
-      console.log(description, boardContext);
-
       const response = await aiAPI.generateTasks({
         description,
         context: boardContext,
@@ -53,7 +51,6 @@ export default function AITaskGenerator({
   };
 
   const handleAddTasks = () => {
-    console.log("Generated tasks:", generatedTasks, listNumber);
     //supposed to add task to board and listNumber
     onTasksGenerated(generatedTasks, listNumber);
     setIsOpen(false);

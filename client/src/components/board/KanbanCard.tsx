@@ -98,7 +98,6 @@ export default function KanbanCard({
     const ans = await tasksAPI.updateTask(task.id.split("-")[1], {
       isBookMarked: newBookmarkState,
     });
-    console.log(ans);
     toast.success(newBookmarkState ? "Task bookmarked" : "Bookmark removed");
   };
 

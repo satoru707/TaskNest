@@ -102,7 +102,6 @@ const boardRoutes = async (fastify) => {
             updatedAt: "desc",
           },
         });
-        console.log("All boards for the user I guess", boards);
       }
 
       return { boards };
@@ -124,8 +123,6 @@ const boardRoutes = async (fastify) => {
   fastify.get("/:boardId", async (request, reply) => {
     try {
       const { boardId } = request.params;
-      console.log(`Fetching board with ID: ${boardId}`);
-
       const board = await prisma.board.findUnique({
         where: { id: boardId },
         include: {
@@ -180,8 +177,6 @@ const boardRoutes = async (fastify) => {
         reply.status(404).send({ error: "Board not found" });
         return;
       }
-      console.log("Board fetched successfully:", board);
-
       return { board };
     } catch (error) {
       fastify.log.error(error);
@@ -191,18 +186,12 @@ const boardRoutes = async (fastify) => {
 
   // Create a new board
   fastify.post("/", async (request, reply) => {
-    console.log("tecca");
-
     try {
       const { title, description, ownerId, isPublic } = request.body;
-      console.log(title, ownerId, description);
-      console.log("route");
 
       const userExists = await prisma.user.findUnique({
         where: { id: ownerId }, // or auth0Id if you use that
       });
-      // console.log("UserExists", userExists);
-
       // error is here
       const board = await prisma.board.create({
         data: {
@@ -215,8 +204,6 @@ const boardRoutes = async (fastify) => {
           owner: true, // Only include frequently used relations
         },
       });
-      console.log(board, "8hhy8h8yh8yh8yh");
-
       // Create activity
       await prisma.activity.create({
         data: {
@@ -226,9 +213,6 @@ const boardRoutes = async (fastify) => {
           userId: userExists.id,
         },
       });
-      console.log("frrwfjwrfn");
-      console.log(board);
-
       return { board };
     } catch (error) {
       fastify.log.error(error);
@@ -241,8 +225,6 @@ const boardRoutes = async (fastify) => {
     try {
       const { boardId } = request.params;
       const { title, description, isPublic } = request.body;
-      console.log("Board", boardId, title, description, isPublic);
-
       const board = await prisma.board.update({
         where: { id: boardId },
         data: {
@@ -262,8 +244,6 @@ const boardRoutes = async (fastify) => {
 
       // Emit real-time update
       io.to(`board-${boardId}`).emit("board-updated", { board });
-      console.log("Board", board);
-
       return { board };
     } catch (error) {
       fastify.log.error(error);
@@ -282,8 +262,6 @@ const boardRoutes = async (fastify) => {
 
       // Emit real-time update
       io.to(`board-${boardId}`).emit("board-deleted", { boardId });
-      console.log("Deleted successfully");
-
       return { success: true };
     } catch (error) {
       fastify.log.error(error);
@@ -296,8 +274,6 @@ const boardRoutes = async (fastify) => {
     try {
       const { boardId } = request.params;
       const { userId, role } = request.body;
-      console.log(boardId, userId, role);
-
       const existingMember = await prisma.boardMember.findUnique({
         where: {
           boardId_userId: {
@@ -306,8 +282,6 @@ const boardRoutes = async (fastify) => {
           },
         },
       });
-      console.log("Check existing member", existingMember);
-
       if (existingMember) {
         reply
           .status(409)
@@ -420,8 +394,6 @@ const boardRoutes = async (fastify) => {
           ...(isArchived && { archivedAt: new Date() }),
         },
       });
-      console.log("SHould be working", boardId, listId, isArchived, userId);
-
       await prisma.activity.create({
         data: {
           type: isArchived == true ? "LIST_ARCHIVED" : "LIST_UNARCHIVED",
@@ -469,7 +441,7 @@ const boardRoutes = async (fastify) => {
     try {
       const { boardId, memberId } = request.params;
       const { role } = request.body;
-      console.log("data init", boardId, memberId, role);
+      // console.log("data init", boardId, memberId, role);
       const member = await prisma.boardMember.update({
         where: {
           boardId_userId: {
@@ -513,8 +485,6 @@ const boardRoutes = async (fastify) => {
         },
         include: { user: true },
       });
-      console.log("The ids", boardId, memberId, member);
-
       if (!member) {
         reply.status(404).send({ error: "Member not found" });
         return;
@@ -554,18 +524,16 @@ const boardRoutes = async (fastify) => {
     try {
       const { boardId } = request.params;
       const { title, position } = request.body;
-      console.log(boardId, title, position);
 
-      console.log(
-        `Creating list for board ${boardId} with title: ${title}\nPosition: ${position}`
-      );
+      // console.log(
+      //   `Creating list for board ${boardId} with title: ${title}\nPosition: ${position}`
+      // );
       //get the number of lists with board id
       const lists = await prisma.list.findMany({
         where: { boardId: boardId },
         select: { position: true },
       });
       const new_position = lists.length + 1;
-      console.log("List count", new_position);
 
       const list = await prisma.list.create({
         data: {
@@ -581,8 +549,6 @@ const boardRoutes = async (fastify) => {
           board: true,
         },
       });
-      console.log("Done with creating", list);
-
       //Continue from here
       io.to(`board-${boardId}`).emit("list-created", { list });
 
@@ -624,8 +590,6 @@ const boardRoutes = async (fastify) => {
   fastify.delete("/:boardId/lists/:listId", async (request, reply) => {
     try {
       const { boardId, listId } = request.params;
-      console.log("BoardList", boardId, listId);
-
       await prisma.list.delete({
         where: { id: listId, boardId: boardId },
       });

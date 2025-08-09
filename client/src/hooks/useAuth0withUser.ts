@@ -10,7 +10,7 @@ export const useAuth0WithUser = () => {
 
     try {
       //when user uses github i need the gmail
-      console.log("User", user);
+      // console.log("User", user);
       //check if user exists and just update it,
       // no need to check if user used google or github,just update it
       const { data: existingUser } = await axios.post(
@@ -19,7 +19,6 @@ export const useAuth0WithUser = () => {
         }/api/auth/checkEmail`,
         user?.email
       );
-      console.log("Existing user:", existingUser);
 
       if (existingUser) {
         // Create new user if not found
@@ -32,7 +31,6 @@ export const useAuth0WithUser = () => {
             email: user?.email,
           }
         );
-        console.log("New user created:", newUser);
         return newUser || existingUser;
       }
     } catch (error: any) {
@@ -47,7 +45,6 @@ export const useAuth0WithUser = () => {
             avatar: user?.picture,
           }
         );
-        console.log("New user created:", newUser);
 
         return newUser;
       }

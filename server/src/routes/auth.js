@@ -10,16 +10,11 @@ const authRoutes = async (fastify) => {
       if (!email || !password) {
         return res.code(400).send({ error: "Email and password are required" });
       }
-      console.log(email, password);
-
       const existingUser = await prisma.user.findUnique({
         where: { email },
         // select: { auth0Id: true, name: true, password: true },
       });
-      console.log("Existing user", existingUser);
-
       if (!existingUser) {
-        console.log("User does not exiss");
         return res.send({
           error: "User doesn't exists!",
           success: !existingUser,
@@ -59,24 +54,16 @@ const authRoutes = async (fastify) => {
   fastify.post("/register", async (req, res) => {
     try {
       const { email, password, name } = req.body;
-      console.log(email, name);
-
       if (!email || !password) {
         return res.code(400).send({ error: "Email and password are required" });
       }
       const existingUser = await prisma.user.findUnique({
         where: { email: email },
       });
-      console.log("Existing user", existingUser);
-
       if (existingUser) {
-        console.log("User already exists");
-
         //go to login
         return res.send({ error: "User exists!" });
       }
-      console.log("Doesn't exost");
-
       const userResponse = await axios.post(
         `https://${process.env.AUTH0_DOMAIN}/dbconnections/signup`,
         {
@@ -88,7 +75,6 @@ const authRoutes = async (fastify) => {
       );
       // 2. Extract Auth0 ID
       const auth0Id = userResponse.data._id;
-      console.log("authId", auth0Id);
       const user = await prisma.user.create({
         data: {
           auth0Id,
@@ -128,8 +114,6 @@ const authRoutes = async (fastify) => {
       const existingUser = await prisma.user.findUnique({
         where: { email },
       });
-      console.log("Checking email:", email, "Existing user:", existingUser);
-
       if (existingUser) {
         return res.code(200).send({ exists: true, existingUser });
       }
@@ -152,7 +136,6 @@ const authRoutes = async (fastify) => {
       const existingUser = await prisma.user.findUnique({
         where: { email },
       });
-      console.log("Existing user for update:", existingUser);
       const newUser = await prisma.user.update({
         where: { email },
         data: { auth0Id },
@@ -168,7 +151,6 @@ const authRoutes = async (fastify) => {
   fastify.post("/profile", async (request, reply) => {
     try {
       const { auth0Id, email, name, avatar } = request.body;
-      console.log("Profile data:", { auth0Id, email, name, avatar });
 
       let user = await prisma.user.findUnique({
         where: { email },
@@ -195,7 +177,6 @@ const authRoutes = async (fastify) => {
           },
         });
       }
-      console.log("User", user);
 
       return { user };
     } catch (error) {

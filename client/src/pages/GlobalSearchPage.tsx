@@ -47,7 +47,6 @@ export default function SearchPage() {
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
   const { user } = useAuth0();
-  console.log(user);
   // Load boards initially
   useEffect(() => {
     if (!dbUser || !boards.length) {
@@ -55,8 +54,6 @@ export default function SearchPage() {
       return;
     }
   }, [dbUser, boards]);
-  console.log(import.meta.env.VITE_SOCKET_CORS_ORIGIN);
-
   useEffect(() => {
     const fetchBoards = async () => {
       try {
@@ -75,27 +72,19 @@ export default function SearchPage() {
       const userId = await authAPI.getProfile(user?.sub || "");
 
       const boards = await boardsAPI.getBoards(userId.data.user.id);
-      console.log("Boards", boards.data.boards);
-
       setUsersBoards(boards.data.boards);
     }
     fun();
-    console.log("User boards", boards);
   }, []);
 
   function userInBoard(boardId: string) {
-    console.log("You blind asf nigga", boardId, userBoards);
     for (var board of userBoards) {
-      console.log("here nigga", board.id, boardId);
       if (board.id == boardId) {
-        console.log("Jackpot");
         return true;
       }
     }
     return false;
   }
-  console.log("Analyise this", userBoards, searchResults);
-
   // Search functionality (triggered only when query is non-empty)
   useEffect(() => {
     const performSearch = () => {
@@ -139,8 +128,6 @@ export default function SearchPage() {
 
   const handleJoinBoard = (boardId: string, title: string) => {
     const present = userInBoard(boardId);
-    console.log("Is this nigga present", present);
-
     if (present == true) {
       toast.error("You are already a member of this board!");
       return;
@@ -150,14 +137,10 @@ export default function SearchPage() {
   };
 
   const confirmJoinBoard = async () => {
-    console.log(showJoinConfirm, dbUser);
-
     if (!showJoinConfirm || !dbUser) return;
 
     if (showJoinConfirm.boardId) {
       const present = userInBoard(showJoinConfirm.boardId);
-      console.log("Present", present);
-
       if (present == true) {
         toast.error("You are already a member of this board!");
         return;

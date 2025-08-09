@@ -58,8 +58,6 @@ export default function Dashboard() {
     try {
       // Load boards
       const boardsResponse = await boardsAPI.getBoards(dbUser.id);
-      console.log("Boards", boardsResponse.data.boards, dbUser.id);
-
       setBoards(
         boardsResponse.data.boards.filter(
           (board: { isArchived: boolean }) => !board.isArchived
@@ -77,8 +75,6 @@ export default function Dashboard() {
               statusFilter: null,
             }
           );
-          console.log(analyticsResponse.data);
-
           setAnalytics(analyticsResponse.data.recentActivities);
           setRecentActivity(analyticsResponse.data.recentActivities || []);
         } catch (analyticsError) {

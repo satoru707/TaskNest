@@ -25,7 +25,6 @@ export default function EditMemberModal({
   const [status, setStatus] = useState<"active" | "inactive">("active");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  console.log(member);
 
   useEffect(() => {
     if (member) {
@@ -64,7 +63,6 @@ export default function EditMemberModal({
     onClose();
     if (member) {
       setRole(member.role || "EDITOR");
-      console.log(member);
       authAPI.updateProfile(member.auth0Id, {
         role: member.role,
       });

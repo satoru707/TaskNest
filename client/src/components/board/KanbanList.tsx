@@ -85,12 +85,9 @@ export default function KanbanList({
       ) &&
       user?.sub
     ) {
-      console.log(id);
       const userId = await authAPI.getProfile(user.sub);
-      console.log(id, userId);
 
       const listData = await boardsAPI.getList(id.split("-")[1]);
-      console.log(listData.data);
       await boardsAPI.archiveList(listData.data.boardId, id.split("-")[1], {
         isArchived: true,
         userId: userId.data.user.id,
@@ -203,7 +200,6 @@ export default function KanbanList({
             <div
               key={task.id}
               onClick={() => {
-                console.log("Task clicked:", task.id);
                 onTaskClick?.(task);
               }}
             >

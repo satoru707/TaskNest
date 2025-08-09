@@ -32,8 +32,6 @@ export default function CreateTaskModal({
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth0();
-  console.log(user);
-  console.log(listId);
 
   if (!isOpen) return null;
 
@@ -54,10 +52,8 @@ export default function CreateTaskModal({
         assigneeIds: selectedAssignees,
         labelIds: selectedLabels,
       };
-      console.log("Task", taskData);
 
       const response = await tasksAPI.createTask(taskData);
-      console.log(taskData, response.data.task);
 
       onTaskCreated(response.data.task);
       onClose();

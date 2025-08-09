@@ -42,7 +42,6 @@ export default function BookmarksPage() {
       // Get all boards and filter bookmarked ones
       const response = await boardsAPI.getBoards(dbUser.id);
       const boards = response.data.boards;
-      console.log(boards);
 
       var bookmarkedBoards = boards
         .filter((board: any) => board.isBookMarked)

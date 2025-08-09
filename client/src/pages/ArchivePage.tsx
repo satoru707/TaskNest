@@ -36,14 +36,13 @@ export default function ArchivePage() {
 
   const loadArchivedItems = async () => {
     if (!dbUser) return;
-    console.log(dbUser);
 
     setIsLoading(true);
     try {
       // Get all archived dboards
       const response = await boardsAPI.getBoards(dbUser.id);
       const boards = response.data.boards;
-      console.log(boards);
+      boards;
 
       // Filtered Archived Boards
       var archivedBoards = boards
@@ -153,7 +152,6 @@ export default function ArchivePage() {
             userId: dbUser.id,
           });
       // console.log("This is the item", item);
-      console.log(item.boardId, item.id, false, dbUser.id);
 
       setArchivedItems((prevItems: any[]) =>
         prevItems.filter(
@@ -168,8 +166,6 @@ export default function ArchivePage() {
   };
 
   const handlePermanentDelete = async (item: any) => {
-    console.log(item);
-
     const confirmDelete = window.confirm(
       `Are you sure you want to permanently delete "${item.title}"? This action cannot be undone.`
     );

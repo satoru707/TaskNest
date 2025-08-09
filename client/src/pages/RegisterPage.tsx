@@ -70,7 +70,6 @@ export default function RegisterPage() {
         name,
       });
 
-      console.log(response);
       if (response.success) {
         loginWithRedirect({
           authorizationParams: {

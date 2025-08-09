@@ -82,7 +82,6 @@ export default function TaskModal({
         assigneeIds: selectedAssignees,
         labelIds: selectedLabels,
       };
-      console.log(task.id, updates);
 
       const response = await tasksAPI.updateTask(
         task.id.split("-")[1],
@@ -355,7 +354,6 @@ export default function TaskModal({
                               task.id,
                               item.id
                             );
-                            console.log(success);
                             toast.success(
                               "Checklist item deleted successfully"
                             );

@@ -88,7 +88,6 @@ export default function AnalyticsPage() {
         statusFilter,
       });
       setAnalytics(response.data);
-      console.log(response.data);
 
       const hasAnyData =
         response.data.overview.assignedTasks > 0 ||

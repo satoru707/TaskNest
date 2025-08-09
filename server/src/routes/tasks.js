@@ -17,7 +17,7 @@ const taskRoutes = async (fastify) => {
         auth0Id,
       } = request.body;
 
-      console.log("autjiwjiwr", auth0Id);
+      // console.log("autjiwjiwr", auth0Id);
 
       const user = await prisma.user.findUnique({
         where: { auth0Id: createdById },
@@ -100,8 +100,6 @@ const taskRoutes = async (fastify) => {
 
       // Emit real-time update
       io.to(`board-${task.list.board.id}`).emit("task-created", { task });
-      console.log("Task", task);
-
       return { task };
     } catch (error) {
       fastify.log.error(error);
@@ -191,9 +189,9 @@ const taskRoutes = async (fastify) => {
         }
       }
 
-      if (id) {
-        console.log("You used the localStorage right?");
-      }
+      // if (id) {
+      //   console.log("You used the localStorage right?");
+      // }
 
       // Perform the task update
       const task = await prisma.task.update({
